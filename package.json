@@ -10,6 +10,7 @@
     "test": "jest"
   },
   "dependencies": {
+<<<<<<< HEAD
     "@react-navigation/native": "^7.1.6",
     "@react-navigation/native-stack": "^7.3.10",
     "react": "19.0.0",
@@ -23,6 +24,10 @@
     "react-native-screens": "^4.10.0",
     "react-native-svg": "^15.11.2",
     "react-native-svg-charts": "^5.4.0"
+=======
+    "react": "19.0.0",
+    "react-native": "0.78.1"
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
   },
   "devDependencies": {
     "@babel/core": "^7.25.2",
@@ -47,4 +52,8 @@
   "engines": {
     "node": ">=18"
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20

@@ -11,7 +11,10 @@
 		13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 13B07FB51A68108700A75B9A /* Images.xcassets */; };
 		761780ED2CA45674006654EE /* AppDelegate.swift in Sources */ = {isa = PBXBuildFile; fileRef = 761780EC2CA45674006654EE /* AppDelegate.swift */; };
 		81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */ = {isa = PBXBuildFile; fileRef = 81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */; };
+<<<<<<< HEAD
 		4E8995FA62C9464290E82490 /* Yellowtail-Regular.ttf in Resources */ = {isa = PBXBuildFile; fileRef = BF8D9DFB196B4CD29107685A /* Yellowtail-Regular.ttf */; };
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 /* End PBXBuildFile section */
 
 /* Begin PBXContainerItemProxy section */
@@ -36,7 +39,10 @@
 		761780EC2CA45674006654EE /* AppDelegate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; name = AppDelegate.swift; path = snapmealApp/AppDelegate.swift; sourceTree = "<group>"; };
 		81AB9BB72411601600AC10FF /* LaunchScreen.storyboard */ = {isa = PBXFileReference; fileEncoding = 4; lastKnownFileType = file.storyboard; name = LaunchScreen.storyboard; path = snapmealApp/LaunchScreen.storyboard; sourceTree = "<group>"; };
 		ED297162215061F000B7C4FE /* JavaScriptCore.framework */ = {isa = PBXFileReference; lastKnownFileType = wrapper.framework; name = JavaScriptCore.framework; path = System/Library/Frameworks/JavaScriptCore.framework; sourceTree = SDKROOT; };
+<<<<<<< HEAD
 		BF8D9DFB196B4CD29107685A /* Yellowtail-Regular.ttf */ = {isa = PBXFileReference; name = "Yellowtail-Regular.ttf"; path = "../src/assets/fonts/Yellowtail-Regular.ttf"; sourceTree = "<group>"; fileEncoding = undefined; lastKnownFileType = unknown; explicitFileType = undefined; includeInIndex = 0; };
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 /* End PBXFileReference section */
 
 /* Begin PBXFrameworksBuildPhase section */
@@ -95,7 +101,10 @@
 				83CBBA001A601CBA00E9B192 /* Products */,
 				2D16E6871FA4F8E400B85C8A /* Frameworks */,
 				BBD78D7AC51CEA395F1C20DB /* Pods */,
+<<<<<<< HEAD
 				E9325C886066447BB18BE839 /* Resources */,
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 			);
 			indentWidth = 2;
 			sourceTree = "<group>";
@@ -119,6 +128,7 @@
 			path = Pods;
 			sourceTree = "<group>";
 		};
+<<<<<<< HEAD
 		E9325C886066447BB18BE839 /* Resources */ = {
 			isa = "PBXGroup";
 			children = (
@@ -128,6 +138,8 @@
 			sourceTree = "<group>";
 			path = "";
 		};
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 /* End PBXGroup section */
 
 /* Begin PBXNativeTarget section */
@@ -197,7 +209,10 @@
 			files = (
 				81AB9BB82411601600AC10FF /* LaunchScreen.storyboard in Resources */,
 				13B07FBF1A68108700A75B9A /* Images.xcassets in Resources */,
+<<<<<<< HEAD
 				4E8995FA62C9464290E82490 /* Yellowtail-Regular.ttf in Resources */,
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

@@ -26,13 +26,21 @@
 	<true/>
 	<key>NSAppTransportSecurity</key>
 	<dict>
+<<<<<<< HEAD
+=======
+	  <!-- Do not change NSAllowsArbitraryLoads to true, or you will risk app rejection! -->
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 		<key>NSAllowsArbitraryLoads</key>
 		<false/>
 		<key>NSAllowsLocalNetworking</key>
 		<true/>
 	</dict>
 	<key>NSLocationWhenInUseUsageDescription</key>
+<<<<<<< HEAD
 	<string/>
+=======
+	<string></string>
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
 	<key>UIRequiredDeviceCapabilities</key>
@@ -47,9 +55,12 @@
 	</array>
 	<key>UIViewControllerBasedStatusBarAppearance</key>
 	<false/>
+<<<<<<< HEAD
 	<key>UIAppFonts</key>
 	<array>
 		<string>Yellowtail-Regular.ttf</string>
 	</array>
+=======
+>>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 </dict>
 </plist>
