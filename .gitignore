@@ -1,0 +1,24 @@
+# Node modules
+node_modules/
+
+# Expo
+.expo/
+
+# Android
+android/.gradle/
+android/build/
+android/app/build/
+android/app/.cxx/
+
+# iOS
+ios/build/
+ios/Pods/
+
+# System / 기타
+*.log
+*.tmp
+*.lock
+*.apk
+.DS_Store
+.env
+
