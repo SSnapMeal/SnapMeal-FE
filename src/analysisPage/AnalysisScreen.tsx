@@ -21,6 +21,7 @@ import CalendarSection from '../components/CalendarSection';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import TabSelector from '../components/TabSelecter';
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 
 dayjs.extend(isoWeek);
@@ -28,7 +29,8 @@ dayjs.extend(isoWeek);
 const AnalysisScreen = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
-  const [selectedTab, setSelectedTab] = useState<'식단' | '추천'>('식단');
+  const [selectedTabIndex, setSelectedTabIndex] = useState(0);
+  const tabLabels = ['식단', '추천'];
   const [cameraMenuVisible, setCameraMenuVisible] = useState(false);
   const navigation = useNavigation<NavigationProp>();
 
@@ -119,29 +121,13 @@ const AnalysisScreen = () => {
             toggleExpanded={() => setIsCalendarExpanded(!isCalendarExpanded)}
             marked={marked}
           />
-          <View style={styles.tabWrapper}>
-            {['식단', '추천'].map((tab) => {
-              const isActive = selectedTab === tab;
-              return (
-                <TouchableOpacity
-                  key={tab}
-                  style={[styles.tabItem, isActive && { backgroundColor: '#FFFFFF' }]}
-                  onPress={() => setSelectedTab(tab as '식단' | '추천')}
-                >
-                  <Text
-                    style={[
-                      styles.tabItemText,
-                      isActive ? { fontWeight: 'bold', color: '#000' } : { color: '#999' },
-                    ]}
-                  >
-                    {tab}
-                  </Text>
-                </TouchableOpacity>
-              );
-            })}
-          </View>
+          <TabSelector
+            labels={tabLabels}
+            selectedIndex={selectedTabIndex}
+            onSelectIndex={setSelectedTabIndex}
+          />
 
-          {selectedTab === '식단' ? (
+          {selectedTabIndex  === 0 ? (
             <>
               <View style={styles.kcalRow}>
                 <Text style={styles.kcalLabel}>칼로리</Text>
@@ -195,23 +181,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     top: 33,
     right: 32,
-  },
-  tabWrapper: {
-    backgroundColor: '#F1F1F3',
-    marginHorizontal: 24,
-    marginTop: 17,
-    borderRadius: 4,
-    flexDirection: 'row',
-    padding: 5,
-  },
-  tabItem: {
-    flex: 1,
-    paddingVertical: 3,
-    alignItems: 'center',
-    borderRadius: 11,
-  },
-  tabItemText: {
-    fontSize: 12,
   },
   kcalRow: {
     flexDirection: 'row',

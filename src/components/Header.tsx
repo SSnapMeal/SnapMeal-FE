@@ -4,13 +4,14 @@ import { useNavigation } from '@react-navigation/native';
 
 type HeaderProps = {
   title: string;
+  backgroundColor?: string;
 };
 
-const Header = ({ title }: HeaderProps) => {
+const Header = ({ title, backgroundColor = '#fff' }: HeaderProps) => {
   const navigation = useNavigation();
 
   return (
-    <View style={styles.header}>
+    <View style={[styles.header, { backgroundColor }]}>
       <TouchableOpacity onPress={() => navigation.goBack()}>
         <Image
           source={require('../assets/images/backArrow-black.png')}

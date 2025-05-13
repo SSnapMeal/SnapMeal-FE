@@ -34,7 +34,17 @@ const Navigation = () => {
         />
       </TouchableOpacity>
 
-      <Image source={require('../assets/images/communityIcon.png')} style={styles.icon} />
+      <TouchableOpacity onPress={() => navigation.navigate('Community')}>
+        <Image
+          source={
+            currentRoute === 'Community'
+              ? require('../assets/images/communityIcon-active.png')
+              : require('../assets/images/communityIcon.png')
+          }
+          style={styles.icon}
+        />
+      </TouchableOpacity>
+
       <TouchableOpacity onPress={() => navigation.navigate('MyPage')}>
         <Image
           source={

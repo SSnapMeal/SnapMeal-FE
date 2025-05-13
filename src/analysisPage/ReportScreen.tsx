@@ -20,7 +20,7 @@ const ReportScreen = () => {
     <ScrollView style={styles.container}>
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       {/* 상단 헤더 */}
-      <Header title="리포트" />
+      <Header title="리포트" backgroundColor='#FAFAFA'/>
 
       {/* 탭 메뉴 */}
       <View style={styles.tabRow}>

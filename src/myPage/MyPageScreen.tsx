@@ -1,8 +1,14 @@
 import React from 'react';
 import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import { useNavigation } from '@react-navigation/native';
 import Navigation from '../components/Navigation';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
+
 
 const MypageScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   return (
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
@@ -17,8 +23,11 @@ const MypageScreen = () => {
             <Text style={styles.profileName}>김스냅님</Text>
             <Text style={styles.profileType}>#디저트 집착 유형</Text>
           </View>
-          <TouchableOpacity>
-            <Text style={styles.arrow}>{'>'}</Text>
+          <TouchableOpacity onPress={() => navigation.navigate('ProfileEdit')}>
+            <Image
+              source={require('../assets/images/profileSetting-arrow.png')}
+              style={[styles.arrowImage]}
+            />
           </TouchableOpacity>
         </View>
 
@@ -29,8 +38,11 @@ const MypageScreen = () => {
         </View>
 
         {/* 섹션: 내 정보 */}
-        <Text style={styles.sectionTitle}>내 정보</Text>
-        <View style={styles.sectionDivider} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>내 정보</Text>
+          <View style={styles.sectionDividerLine} />
+        </View>
+
         {['식사기록 요약', '활동 내역', '친구 목록', '가입한 커뮤니티'].map((label, idx) => (
           <TouchableOpacity key={idx} style={styles.menuItem}>
             <Text style={styles.menuText}>{label}</Text>
@@ -38,8 +50,11 @@ const MypageScreen = () => {
         ))}
 
         {/* 섹션: 이용 안내 */}
-        <Text style={styles.sectionTitleGreen}>이용 안내</Text>
-        <View style={styles.sectionDividerGreen} />
+        <View style={styles.sectionHeader}>
+          <Text style={styles.sectionTitle}>이용 정보</Text>
+          <View style={styles.sectionDividerLine} />
+        </View>
+
         {['문의사항', '공지사항', '앱 정보'].map((label, idx) => (
           <TouchableOpacity key={idx} style={styles.menuItem}>
             <Text style={styles.menuText}>{label}</Text>
@@ -55,18 +70,18 @@ const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#fff',
-    paddingHorizontal: 24,
-    paddingTop: 32,
+    paddingHorizontal: 26,
+    paddingTop: 33,
   },
   profileSection: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 24,
+    marginBottom: 27,
   },
   profileImage: {
-    width: 50,
-    height: 50,
-    borderRadius: 25,
+    width: 65,
+    height: 65,
+    borderRadius: 40,
     backgroundColor: '#eee',
   },
   profileTextBox: {
@@ -78,54 +93,49 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
   },
   profileType: {
-    fontSize: 13,
-    color: '#555',
+    fontSize: 14,
+    marginTop: 2
   },
-  arrow: {
-    fontSize: 18,
-    color: '#999',
+  arrowImage: {
+    width: 21,
+    height: 42
   },
   badgeRow: {
     flexDirection: 'row',
-    gap: 10,
+    gap: 12,
     marginBottom: 24,
   },
   badge: {
-    backgroundColor: '#E6F4EA',
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 6,
+    backgroundColor: '#E9F6E2',
+    borderRadius: 18,
+    paddingHorizontal: 20,
+    paddingVertical: 9,
   },
   badgeText: {
-    fontSize: 13,
-    color: '#333',
+    fontSize: 14,
+  },
+  sectionHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: 24, // 섹션 간 여백
   },
   sectionTitle: {
     color: '#38B000',
-    fontSize: 14,
+    fontSize: 13,
     fontWeight: 'bold',
+    marginRight: 12,
+    lineHeight: 18,
   },
-  sectionDivider: {
+  sectionDividerLine: {
+    flex: 1,
     height: 1,
     backgroundColor: '#38B000',
-    marginVertical: 12,
-  },
-  sectionTitleGreen: {
-    color: '#38B000',
-    fontSize: 14,
-    fontWeight: 'bold',
-    marginTop: 32,
-  },
-  sectionDividerGreen: {
-    height: 1,
-    backgroundColor: '#38B000',
-    marginVertical: 12,
   },
   menuItem: {
-    paddingVertical: 10,
+    paddingVertical: 20,
   },
   menuText: {
-    fontSize: 15,
+    fontSize: 16,
   },
 });
 

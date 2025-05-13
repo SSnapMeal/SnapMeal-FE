@@ -1,15 +1,26 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
 import { PieChart } from 'react-native-svg-charts';
 import Header from '../components/Header';
+import InfoCardItem from '../components/InfoCardItem';
+
+import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
+import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { RootStackParamList } from '../types/navigation';
+
+type PhotoPreviewRouteProp = RouteProp<RootStackParamList, 'PhotoPreview'>;
 
 const PhotoPreviewScreen = () => {
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  const route = useRoute<PhotoPreviewRouteProp>();
+  const { imageUri } = route.params;
+
   const data = [
-    { key: 1, value: 20, color: '#C9E4C5', label: '단백질' },
-    { key: 2, value: 13, color: '#FBD37C', label: '탄수화물' },
-    { key: 3, value: 5, color: '#F7B2AD', label: '당' },
-    { key: 4, value: 3, color: '#FAEDCA', label: '지방' },
-    { key: 5, value: 6, color: '#BDD7EC', label: '기타' },
+    { key: 1, value: 20, color: '#CDE8BF', label: '단백질' },
+    { key: 2, value: 13, color: '#FFD794', label: '탄수화물' },
+    { key: 3, value: 5, color: '#FFC5C6', label: '당' },
+    { key: 4, value: 3, color: '#FFF7C2', label: '지방' },
+    { key: 5, value: 6, color: '#C9D8F0', label: '기타' },
   ];
 
   const pieData = data.map((item) => ({
@@ -20,55 +31,52 @@ const PhotoPreviewScreen = () => {
 
   const details = [
     {
-      title: '단백질 🥚',
+      title: '🥚단백질 🥚',
       description: '오늘 하루 권장 칼로리 중\n152kcal를 섭취했어요',
-      status: '적정',
+      badge: { text: '적정', color: '#85DFAC' },
       intake: '12g / 60g',
-      badgeColor: '#38B000',
     },
     {
       title: '🍞 탄수화물 🍞',
       description: '다음 식사에서 조금 더\n보충해보세요!',
-      status: '부족',
+      badge: { text: '부족', color: '#FED77F' },
       intake: '34g / 260g',
-      badgeColor: '#F4B400',
     },
     {
       title: '🍬 당 🍬',
       description: 'WHO 권장량의 약 24%,\n아직 여유가 있어요!',
-      status: '부족',
+      badge: { text: '부족', color: '#FED77F' },
       intake: '6g / 25g',
-      badgeColor: '#F4B400',
     },
     {
       title: '🥑 지방 🥑',
       description: '적당한 지방 섭취!\n깔끔한 한 끼였어요.',
-      status: '과다',
+      badge: { text: '과다', color: '#FFA3A3' },
       intake: '8g / 60g',
-      badgeColor: '#FF6B6B',
     },
   ];
 
+  const handleSave = () => {
+    navigation.navigate('MealRecord', { imageUri });
+  };
+
   return (
     <ScrollView contentContainerStyle={styles.scrollContainer}>
-      {/* 상단 헤더 */}
-      <Header title="분석 결과" />
+      <Header title="분석 결과" backgroundColor='#FAFAFA'/>
+      <Text style={styles.title}>
+        #샐러드 <Text style={styles.kcal}>#152kcal</Text>
+      </Text>
 
       <View style={styles.card}>
-        <Text style={styles.title}>
-          #샐러드 <Text style={styles.kcal}>#152kcal</Text>
-        </Text>
-
         <PieChart
           style={styles.chart}
           data={pieData}
-          outerRadius={'90%'}
-          innerRadius={'60%'}
+          outerRadius={'100%'}
+          innerRadius={'57%'}
+          padAngle={0}
         />
-
         <View style={styles.pagination}>
           <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
           <View style={styles.dot} />
         </View>
 
@@ -81,25 +89,34 @@ const PhotoPreviewScreen = () => {
             </View>
           ))}
         </View>
+      </View>
 
-        <Text style={styles.sectionHeader}>영양 정보</Text>
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
-          <Text style={styles.summaryKcal}>210/2000kcal</Text>
-        </View>
+      <Text style={styles.sectionHeader}>영양 정보</Text>
+      <View style={styles.summaryCard}>
+        <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
+        <Text style={styles.summaryKcal}>210/2000kcal</Text>
+      </View>
 
-        <View style={styles.grid}>
-          {details.map((item, index) => (
-            <View key={index} style={styles.detailCard}>
-              <Text style={styles.detailTitle}>{item.title}</Text>
-              <Text style={styles.detailDesc}>{item.description}</Text>
-              <View style={styles.detailBottom}>
-                <Text style={[styles.statusBadge, { backgroundColor: item.badgeColor }]}> {item.status} </Text>
-                <Text style={styles.detailIntake}>{item.intake}</Text>
-              </View>
-            </View>
-          ))}
+      <View style={styles.grid}>
+        {details.map((item, index) => (
+          <InfoCardItem
+            key={index}
+            {...item}
+            variant="detail"
+          />
+        ))}
+      </View>
+
+      {/* 기록 안내 + 버튼 */}
+      <View style={styles.saveWrapper}>
+        <View style={styles.noticeBox}>
+          <Text style={styles.noticeText}>
+            💡 기록하지 않으면 분석 결과가 저장되지 않아요!
+          </Text>
         </View>
+        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
+          <Text style={styles.saveButtonText}>기록하고 저장하기</Text>
+        </TouchableOpacity>
       </View>
     </ScrollView>
   );
@@ -107,67 +124,65 @@ const PhotoPreviewScreen = () => {
 
 const styles = StyleSheet.create({
   scrollContainer: {
-    padding: 20,
-    paddingBottom: 40,
-    backgroundColor: '#fff',
+    backgroundColor: '#FAFAFA',
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    padding: 20,
+    paddingTop: 49,
+    paddingHorizontal: 27,
     alignItems: 'center',
-    elevation: 4,
+    elevation: 2,
     shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 6,
+    marginHorizontal: 28,
   },
   title: {
-    alignSelf: 'flex-start',
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 12,
+    marginTop: 10,
+    marginBottom: 7,
+    marginLeft: 38,
   },
-  kcal: {
-    fontWeight: 'normal',
-    color: '#777',
-  },
+  kcal: {},
   chart: {
-    height: 200,
-    width: 200,
-    marginBottom: 16,
+    height: 180,
+    width: 180,
+    marginBottom: 33,
   },
   pagination: {
     flexDirection: 'row',
     marginBottom: 16,
   },
   dot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-    backgroundColor: '#ccc',
-    marginHorizontal: 4,
+    width: 11,
+    height: 11,
+    borderRadius: 6,
+    backgroundColor: '#D9D9D9',
+    marginHorizontal: 5,
+    marginBottom: 37,
   },
   activeDot: {
     backgroundColor: '#38B000',
   },
   nutrientList: {
     width: '100%',
+    marginBottom: 16,
   },
   nutrientRow: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginBottom: 10,
+    marginBottom: 23,
   },
   colorBox: {
-    width: 12,
-    height: 12,
-    borderRadius: 6,
-    marginRight: 8,
+    width: 17,
+    height: 17,
+    borderRadius: 3,
+    marginRight: 15,
   },
   label: {
     flex: 1,
     fontSize: 14,
+    fontWeight: 'bold',
   },
   value: {
     fontSize: 14,
@@ -177,19 +192,20 @@ const styles = StyleSheet.create({
     alignSelf: 'flex-start',
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 30,
+    marginTop: 62,
     marginBottom: 12,
+    marginLeft: 38,
   },
   summaryCard: {
-    backgroundColor: '#E6F4EA',
-    width: '100%',
+    backgroundColor: '#EBF6E6',
     borderRadius: 12,
     padding: 16,
     marginBottom: 20,
+    marginHorizontal: 28,
   },
   summaryTitle: {
     fontWeight: 'bold',
-    fontSize: 15,
+    fontSize: 14,
     marginBottom: 4,
   },
   summaryKcal: {
@@ -200,41 +216,37 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     flexWrap: 'wrap',
     justifyContent: 'space-between',
+    paddingHorizontal: 28,
   },
-  detailCard: {
-    width: '48%',
-    backgroundColor: '#F8F8F8',
-    borderRadius: 12,
-    padding: 14,
+  saveWrapper: {
+    paddingHorizontal: 28,
+    marginBottom: 18,
+    marginTop: 24,
+  },
+  noticeBox: {
+    backgroundColor: '#F3F3F3',
+    paddingVertical: 10,
+    paddingHorizontal: 16,
+    borderRadius: 8,
     marginBottom: 14,
   },
-  detailTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    marginBottom: 6,
-  },
-  detailDesc: {
-    fontSize: 12,
-    marginBottom: 12,
+  noticeText: {
+    fontSize: 13,
     color: '#555',
   },
-  detailBottom: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
+  saveButton: {
+    width: '100%',
+    paddingHorizontal: 18,
+    height: 52,
+    backgroundColor: '#38B000',
+    justifyContent: 'center',
     alignItems: 'center',
+    borderRadius: 26,
   },
-  statusBadge: {
-    fontSize: 11,
-    color: '#fff',
-    paddingHorizontal: 10,
-    paddingVertical: 4,
-    borderRadius: 999,
-    overflow: 'hidden',
-  },
-  detailIntake: {
-    fontSize: 12,
-    color: '#333',
-    fontWeight: '600',
+  saveButtonText: {
+    color: '#FFF',
+    fontWeight: 'bold',
+    lineHeight: 52,
   },
 });
 

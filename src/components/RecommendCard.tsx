@@ -1,56 +1,58 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, Image } from 'react-native';
+import { View, Text, StyleSheet, ScrollView } from 'react-native';
+import InfoCardItem from './InfoCardItem'; // 기존 RecommendationCardItem → 통합된 InfoCardItem 사용
 
 const RecommendCard = () => {
+  const exerciseData = [
+    {
+      title: '자전거',
+      description: '1시간을 타면 200kcal가 소모돼요!',
+      image: require('../assets/images/bike.png'),
+      badge: { text: '유산소', color: '#85DFAC' },
+    },
+    {
+      title: '테니스',
+      description: '1시간을 하면 200kcal가 소모돼요!',
+      image: require('../assets/images/tennis.png'),
+      badge: { text: '유산소', color: '#85DFAC' },
+    },
+    {
+      title: '테니스',
+      description: '1시간을 하면 200kcal가 소모돼요!',
+      image: require('../assets/images/tennis.png'),
+      badge: { text: '유산소', color: '#85DFAC' },
+    },
+  ];
+
+  const foodData = [
+    {
+      title: '샐러드',
+      description: '302kcal로 ○○을 채우기 효과적이에요',
+      image: require('../assets/images/salad.png'),
+    },
+    {
+      title: '치즈',
+      description: '부족한 ○○을 섭취하고 건강을 챙겨요',
+      image: require('../assets/images/cheese.png'),
+    },
+  ];
+
   return (
     <View style={styles.container}>
       {/* 운동 추천 */}
       <Text style={styles.sectionTitle}>152kcal에 딱 맞는 운동</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>자전거</Text>
-          <Text style={styles.cardDesc}>1시간을 타면 200kcal가 소모돼요!</Text>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>유산소</Text>
-          </View>
-          <Image source={require('../assets/images/bike.png')} style={styles.cardImage} />
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>테니스</Text>
-          <Text style={styles.cardDesc}>1시간을 하면 200kcal가 소모돼요!</Text>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>유산소</Text>
-          </View>
-          <Image source={require('../assets/images/tennis.png')} style={styles.cardImage} />
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>테니스</Text>
-          <Text style={styles.cardDesc}>1시간을 하면 200kcal가 소모돼요!</Text>
-          <View style={styles.tag}>
-            <Text style={styles.tagText}>유산소</Text>
-          </View>
-          <Image source={require('../assets/images/tennis.png')} style={styles.cardImage} />
-        </View>
+        {exerciseData.map((item, index) => (
+          <InfoCardItem key={index} {...item} variant="recommend" />
+        ))}
       </ScrollView>
 
       {/* 음식 추천 */}
       <Text style={styles.sectionTitle}>남은 1848kcal는 이렇게 채워봐요!</Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>샐러드</Text>
-          <Text style={styles.cardDesc}>302kcal로 ○○을 채우기 효과적이에요</Text>
-          <Image source={require('../assets/images/salad.png')} style={styles.cardImage} />
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>치즈</Text>
-          <Text style={styles.cardDesc}>부족한 ○○을 섭취하고 건강을 챙겨요</Text>
-          <Image source={require('../assets/images/cheese.png')} style={styles.cardImage} />
-        </View>
-        <View style={styles.card}>
-          <Text style={styles.cardTitle}>치즈</Text>
-          <Text style={styles.cardDesc}>부족한 ○○을 섭취하고 건강을 챙겨요</Text>
-          <Image source={require('../assets/images/cheese.png')} style={styles.cardImage} />
-        </View>
+        {foodData.map((item, index) => (
+          <InfoCardItem key={index} {...item} variant="recommend" />
+        ))}
       </ScrollView>
     </View>
   );
@@ -69,46 +71,6 @@ const styles = StyleSheet.create({
   slider: {
     marginBottom: 54,
     paddingBottom: 10,
-  },
-  card: {
-    backgroundColor: '#F1FBEF',
-    width: 156,
-    height: 137,
-    paddingLeft: 16,
-    paddingRight: 16,
-    paddingTop: 21,
-    borderRadius: 18,
-    marginRight: 17,
-    elevation: 2
-  },
-  cardTitle: {
-    fontWeight: 'bold',
-    fontSize: 14,
-    marginBottom: 4,
-  },
-  cardDesc: {
-    fontSize: 12,
-    marginBottom: 6,
-  },
-  tag: {
-    backgroundColor: '#D8F3DC',
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 12,
-    marginBottom: 6,
-  },
-  tagText: {
-    fontSize: 10,
-    color: '#3E8E41',
-  },
-  cardImage: {
-    position: 'absolute',
-    width: 48,
-    height: 48,
-    alignSelf: 'center',
-    bottom: 14,
-    right: 15
   },
 });
 
