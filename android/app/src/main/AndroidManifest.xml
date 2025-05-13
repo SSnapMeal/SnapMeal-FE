@@ -1,12 +1,10 @@
-<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+<manifest xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:tools="http://schemas.android.com/tools">
 
     <uses-permission android:name="android.permission.INTERNET" />
-<<<<<<< HEAD
     <uses-permission android:name="android.permission.CAMERA" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
     <uses-permission android:name="android.permission.READ_EXTERNAL_STORAGE" />
-=======
->>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
 
     <application
       android:name=".MainApplication"
@@ -15,20 +13,18 @@
       android:roundIcon="@mipmap/ic_launcher_round"
       android:allowBackup="false"
       android:theme="@style/AppTheme"
-      android:supportsRtl="true">
+      android:supportsRtl="true"
+      tools:replace="android:label">
+
       <activity
         android:name=".MainActivity"
         android:label="@string/app_name"
         android:configChanges="keyboard|keyboardHidden|orientation|screenLayout|screenSize|smallestScreenSize|uiMode"
-<<<<<<< HEAD
         android:screenOrientation="portrait"
         android:launchMode="singleTask"
         android:windowSoftInputMode="adjustPan"
-=======
-        android:launchMode="singleTask"
-        android:windowSoftInputMode="adjustResize"
->>>>>>> b62126718e3a003c20afaaefd21bf8d164ab0c20
         android:exported="true">
+
         <intent-filter>
             <action android:name="android.intent.action.MAIN" />
             <category android:name="android.intent.category.LAUNCHER" />

@@ -12,6 +12,12 @@ export type RootStackParamList = {
     PhotoPreview: { imageUri: string };
     MealRecord: { imageUri: string };
 
+    Community: undefined
+
     MyPage: undefined; 
+    ProfileEdit: undefined;
+    EditGoal: undefined;
+    EditIdNick: undefined;
+    EditPass: undefined;
   };
   

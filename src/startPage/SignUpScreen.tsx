@@ -7,7 +7,7 @@ import { RootStackParamList } from '../types/navigation';
 
 import LoginBackground from '../components/LoginBackground';
 import CustomInput from '../components/CustomInput'; // 입력창 컴포넌트
-import { TextInput } from 'react-native';
+import CustomNumInput from '../components/CustomNumInput';
 
 const { height } = Dimensions.get('window');
 
@@ -160,12 +160,14 @@ const SignUpScreen = () => {
                 <View style={{ flex: 1 }}>
                   <Text style={styles.inputLabel}>나이</Text>
                   <View style={{ borderBottomWidth: 1, borderBottomColor: 'white' }}>
-                    <TextInput
+                    <CustomNumInput
+                      label="나이"
                       placeholder="23"
-                      placeholderTextColor="#9C9C9C"
-                      style={styles.input}
-                      keyboardType="numeric"
+                      helperText="* 나이를 입력해주세요"
+                      labelColor="#fff"
+                      borderColor="#fff"
                     />
+
                   </View>
                   <Text style={styles.helperText}>* 안내메시지</Text>
                 </View>

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
 } from 'react-native';
 
-interface CustomInputProps extends TextInputProps {
+interface CustomNumInputProps extends TextInputProps {
   label?: string;
   helperText?: string;
   helperColor?: string;
@@ -18,10 +18,10 @@ interface CustomInputProps extends TextInputProps {
   rightElement?: React.ReactNode;
   labelColor?: string;
   borderColor?: string;
-  textColor?: string;
+  textColor?: string; // ✅ 추가
 }
 
-const CustomInput: React.FC<CustomInputProps> = ({
+const CustomNumInput: React.FC<CustomNumInputProps> = ({
   label = '',
   placeholder = '',
   placeholderTextColor = '#9C9C9C',
@@ -33,7 +33,7 @@ const CustomInput: React.FC<CustomInputProps> = ({
   rightElement,
   labelColor = 'white',
   borderColor = 'white',
-  textColor = 'white',
+  textColor = 'white', // ✅ 기본값 설정
   ...props
 }) => {
   return (
@@ -45,9 +45,10 @@ const CustomInput: React.FC<CustomInputProps> = ({
       <View style={styles.inputRow}>
         <View style={[styles.textAndTimer, { borderBottomColor: borderColor }]}>
           <TextInput
-            style={[styles.input, { color: textColor }]}
+            style={[styles.input, { color: textColor }]} // ✅ 텍스트 색상 적용
             placeholder={placeholder}
             placeholderTextColor={placeholderTextColor}
+            keyboardType="numeric"
             {...props}
           />
           {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
@@ -97,11 +98,6 @@ const styles = StyleSheet.create({
     justifyContent: 'center',
     alignItems: 'flex-end',
   },
-  inputWrapper: {
-    flex: 1,
-    borderBottomWidth: 1,
-    borderBottomColor: 'white',
-  },
   button: {
     marginLeft: 14,
     backgroundColor: '#38B000',
@@ -123,4 +119,4 @@ const styles = StyleSheet.create({
   },
 });
 
-export default CustomInput;
+export default CustomNumInput;
