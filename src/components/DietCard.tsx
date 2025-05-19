@@ -1,16 +1,28 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
+type StatusType = '과다' | '적정' | '부족';
+
 type CardData = {
   imageSource: any;
   title: string;
   mealTime: string;
   sugar: string;
   protein: string;
-  tag: string;
+  tag: StatusType;
 };
 
-const DietCard = () => {
+type DietCardProps = {
+  additionalMeal?: CardData;
+};
+
+const statusColors: Record<StatusType, string> = {
+  과다: '#F3B8B8',
+  적정: '#ABE88F',
+  부족: '#FBE19A',
+};
+
+const DietCard: React.FC<DietCardProps> = ({ additionalMeal }) => {
   const cardData: CardData[] = [
     {
       imageSource: require('../assets/images/food_sample.png'),
@@ -26,13 +38,17 @@ const DietCard = () => {
       mealTime: '점심',
       sugar: '2g (2%)',
       protein: '25g (45%)',
-      tag: '충분',
+      tag: '적정',
     },
   ];
 
+  const finalCardData = additionalMeal
+    ? [additionalMeal, ...cardData]
+    : cardData;
+
   return (
     <>
-      {cardData.map((item, index) => (
+      {finalCardData.map((item, index) => (
         <View style={styles.card} key={index}>
           <View style={styles.imageWrapper}>
             <Image source={item.imageSource} style={styles.cardImage} />
@@ -47,7 +63,7 @@ const DietCard = () => {
             <Text style={styles.cardText}>단백질: {item.protein}</Text>
           </View>
 
-          <View style={styles.cardTag}>
+          <View style={[styles.cardTag, { backgroundColor: statusColors[item.tag] || '#DDD' }]}>
             <Text style={styles.cardTagText}>{item.tag}</Text>
           </View>
         </View>
@@ -103,7 +119,6 @@ const styles = StyleSheet.create({
     position: 'absolute',
     bottom: 14,
     right: 17,
-    backgroundColor: '#FED77F',
     borderRadius: 8,
     width: 45,
     height: 19,
