@@ -4,10 +4,8 @@ import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Dimensions, Ima
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import { ScrollView, TextInput } from 'react-native';
+import { ScrollView } from 'react-native';
 import LinearGradient from 'react-native-linear-gradient';
-
-const { height } = Dimensions.get('window');
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
