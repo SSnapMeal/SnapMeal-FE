@@ -1,29 +1,49 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, TouchableOpacity, Image } from 'react-native';
+import React, { useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Image,
+  Dimensions,
+  StatusBar,
+} from 'react-native';
 import { PieChart } from 'react-native-svg-charts';
 import Header from '../components/Header';
 import InfoCardItem from '../components/InfoCardItem';
-
+import NutrientList from '../components/NutrientList';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
+import NutrientBarChart from '../components/NutrientBarChart';
+import SaveNoticeBox from '../components/SaveNoticeBox';
 
 type PhotoPreviewRouteProp = RouteProp<RootStackParamList, 'PhotoPreview'>;
+
+const screenWidth = Dimensions.get('window').width;
 
 const PhotoPreviewScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<PhotoPreviewRouteProp>();
   const { imageUri } = route.params;
 
-  const data = [
-    { key: 1, value: 20, color: '#CDE8BF', label: '단백질' },
-    { key: 2, value: 13, color: '#FFD794', label: '탄수화물' },
-    { key: 3, value: 5, color: '#FFC5C6', label: '당' },
-    { key: 4, value: 3, color: '#FFF7C2', label: '지방' },
-    { key: 5, value: 6, color: '#C9D8F0', label: '기타' },
+  const rawNutrients = [
+    { key: 1, grams: 20, color: '#CDE8BF', label: '단백질' },
+    { key: 2, grams: 13, color: '#FFD794', label: '탄수화물' },
+    { key: 3, grams: 5, color: '#FFC5C6', label: '당' },
+    { key: 4, grams: 3, color: '#FFF7C2', label: '지방' },
+    { key: 5, grams: 6, color: '#C9D8F0', label: '기타' },
   ];
 
-  const pieData = data.map((item) => ({
+  const totalGrams = rawNutrients.reduce((sum, item) => sum + item.grams, 0);
+
+  const data = rawNutrients.map(item => ({
+    ...item,
+    value: parseFloat(((item.grams / totalGrams) * 100).toFixed(1)),
+  }));
+
+  const pieData = data.map(item => ({
     value: item.value,
     svg: { fill: item.color },
     key: item.key,
@@ -56,97 +76,119 @@ const PhotoPreviewScreen = () => {
     },
   ];
 
+  const [activeIndex, setActiveIndex] = useState(0);
+  const scrollRef = useRef<ScrollView>(null);
+  const [cardWidth, setCardWidth] = useState(screenWidth - 56);
+
+  const handleScroll = (event: any) => {
+    const offsetX = event.nativeEvent.contentOffset.x;
+    const index = Math.round(offsetX / cardWidth);
+    setActiveIndex(index);
+  };
+
   const handleSave = () => {
-    navigation.navigate('MealRecord', { imageUri });
+    navigation.navigate('MealRecord', { imageUri, rawNutrients });
   };
 
   return (
-    <ScrollView contentContainerStyle={styles.scrollContainer}>
-      <Header title="분석 결과" backgroundColor='#FAFAFA'/>
-      <Text style={styles.title}>
-        #샐러드 <Text style={styles.kcal}>#152kcal</Text>
-      </Text>
+    <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
+      {/* ✅ 고정된 상단 영역 */}
+      <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
+      <Header title="분석 결과" backgroundColor="#FAFAFA" />
 
-      <View style={styles.card}>
-        <PieChart
-          style={styles.chart}
-          data={pieData}
-          outerRadius={'100%'}
-          innerRadius={'57%'}
-          padAngle={0}
-        />
-        <View style={styles.pagination}>
-          <View style={[styles.dot, styles.activeDot]} />
-          <View style={styles.dot} />
+      {/* ✅ 스크롤 가능한 본문 */}
+      <ScrollView contentContainerStyle={styles.scrollContainer}>
+        <Text style={styles.title}>
+          #샐러드 <Text style={styles.kcal}>#152kcal</Text>
+        </Text>
+
+        <View
+          style={styles.card}
+          onLayout={(e) => {
+            const { width } = e.nativeEvent.layout;
+            setCardWidth(width);
+          }}
+        >
+          <ScrollView
+            horizontal
+            pagingEnabled
+            showsHorizontalScrollIndicator={false}
+            onScroll={handleScroll}
+            scrollEventThrottle={16}
+            ref={scrollRef}
+          >
+            {/* Slide 1 */}
+            <View style={{ width: cardWidth, alignItems: 'center', justifyContent: 'center' }}>
+              <PieChart
+                style={styles.chart}
+                data={pieData}
+                outerRadius={'95%'}
+                innerRadius={'54%'}
+                padAngle={0}
+              />
+            </View>
+
+            {/* Slide 2 */}
+            <View style={{ width: cardWidth }}>
+              <NutrientBarChart data={data} customStyle={{ width: '80%', marginTop: 40 }} />
+            </View>
+          </ScrollView>
+
+          <View style={styles.pagination}>
+            <View style={[styles.dot, activeIndex === 0 && styles.activeDot]} />
+            <View style={[styles.dot, activeIndex === 1 && styles.activeDot]} />
+          </View>
+
+          <View style={{ paddingHorizontal: 27, width: '100%' }}>
+            <NutrientList data={data} />
+          </View>
         </View>
 
-        <View style={styles.nutrientList}>
-          {data.map((item) => (
-            <View key={item.key} style={styles.nutrientRow}>
-              <View style={[styles.colorBox, { backgroundColor: item.color }]} />
-              <Text style={styles.label}>{item.label}</Text>
-              <Text style={styles.value}>{item.value}%</Text>
-            </View>
+        <Text style={styles.sectionHeader}>영양 정보</Text>
+
+        <View style={styles.summaryCard}>
+          <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
+          <Text style={styles.summaryKcal}>210/2000kcal</Text>
+        </View>
+
+        <View style={styles.grid}>
+          {details.map((item, index) => (
+            <InfoCardItem key={index} {...item} variant="detail" />
           ))}
         </View>
-      </View>
 
-      <Text style={styles.sectionHeader}>영양 정보</Text>
-      <View style={styles.summaryCard}>
-        <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
-        <Text style={styles.summaryKcal}>210/2000kcal</Text>
-      </View>
-
-      <View style={styles.grid}>
-        {details.map((item, index) => (
-          <InfoCardItem
-            key={index}
-            {...item}
-            variant="detail"
-          />
-        ))}
-      </View>
-
-      {/* 기록 안내 + 버튼 */}
-      <View style={styles.saveWrapper}>
-        <View style={styles.noticeBox}>
-          <Text style={styles.noticeText}>
-            💡 기록하지 않으면 분석 결과가 저장되지 않아요!
-          </Text>
-        </View>
-        <TouchableOpacity style={styles.saveButton} onPress={handleSave}>
-          <Text style={styles.saveButtonText}>기록하고 저장하기</Text>
-        </TouchableOpacity>
-      </View>
-    </ScrollView>
+        <SaveNoticeBox onSave={handleSave} />
+      </ScrollView>
+    </View>
   );
 };
 
 const styles = StyleSheet.create({
   scrollContainer: {
     backgroundColor: '#FAFAFA',
+    paddingBottom: 18,
   },
   card: {
     backgroundColor: '#fff',
     borderRadius: 20,
-    paddingTop: 49,
-    paddingHorizontal: 27,
+    paddingTop: 40,
     alignItems: 'center',
     elevation: 2,
     shadowColor: '#000',
     marginHorizontal: 28,
+    marginBottom: 62,
   },
   title: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginTop: 10,
+    marginTop: 37,
     marginBottom: 7,
     marginLeft: 38,
   },
   kcal: {},
   chart: {
-    height: 180,
-    width: 180,
+    height: 190,
+    width: 190,
     marginBottom: 33,
   },
   pagination: {
@@ -164,35 +206,10 @@ const styles = StyleSheet.create({
   activeDot: {
     backgroundColor: '#38B000',
   },
-  nutrientList: {
-    width: '100%',
-    marginBottom: 16,
-  },
-  nutrientRow: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    marginBottom: 23,
-  },
-  colorBox: {
-    width: 17,
-    height: 17,
-    borderRadius: 3,
-    marginRight: 15,
-  },
-  label: {
-    flex: 1,
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
-  value: {
-    fontSize: 14,
-    fontWeight: 'bold',
-  },
   sectionHeader: {
     alignSelf: 'flex-start',
     fontSize: 16,
     fontWeight: 'bold',
-    marginTop: 62,
     marginBottom: 12,
     marginLeft: 38,
   },
@@ -217,36 +234,6 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 28,
-  },
-  saveWrapper: {
-    paddingHorizontal: 28,
-    marginBottom: 18,
-    marginTop: 24,
-  },
-  noticeBox: {
-    backgroundColor: '#F3F3F3',
-    paddingVertical: 10,
-    paddingHorizontal: 16,
-    borderRadius: 8,
-    marginBottom: 14,
-  },
-  noticeText: {
-    fontSize: 13,
-    color: '#555',
-  },
-  saveButton: {
-    width: '100%',
-    paddingHorizontal: 18,
-    height: 52,
-    backgroundColor: '#38B000',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 26,
-  },
-  saveButtonText: {
-    color: '#FFF',
-    fontWeight: 'bold',
-    lineHeight: 52,
   },
 });
 
