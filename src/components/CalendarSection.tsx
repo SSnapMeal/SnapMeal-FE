@@ -22,9 +22,15 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
       onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 20,
       onPanResponderRelease: (_, gestureState) => {
         if (gestureState.dx < -20) {
-          setSelectedDate(prev => prev.add(1, 'month'));
+          setSelectedDate(prev => {
+            const base = isExpanded ? prev : prev.startOf('week');
+            return isExpanded ? base.add(1, 'month') : base.add(1, 'week');
+          });
         } else if (gestureState.dx > 20) {
-          setSelectedDate(prev => prev.subtract(1, 'month'));
+          setSelectedDate(prev => {
+            const base = isExpanded ? prev : prev.startOf('week');
+            return isExpanded ? base.subtract(1, 'month') : base.subtract(1, 'week');
+          });
         }
       },
     })
