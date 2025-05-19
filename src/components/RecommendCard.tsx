@@ -3,22 +3,25 @@ import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import InfoCardItem from './InfoCardItem'; // 기존 RecommendationCardItem → 통합된 InfoCardItem 사용
 
 const RecommendCard = () => {
+  const consumedCalories = 152;
+  const remainingCalories = 1848;
+
   const exerciseData = [
     {
       title: '자전거',
-      description: '1시간을 타면 200kcal가 소모돼요!',
+      description: `1시간을 타면 200kcal가 소모돼요!`,
       image: require('../assets/images/bike.png'),
       badge: { text: '유산소', color: '#85DFAC' },
     },
     {
       title: '테니스',
-      description: '1시간을 하면 200kcal가 소모돼요!',
+      description: `1시간을 하면 200kcal가 소모돼요!`,
       image: require('../assets/images/tennis.png'),
       badge: { text: '유산소', color: '#85DFAC' },
     },
     {
       title: '테니스',
-      description: '1시간을 하면 200kcal가 소모돼요!',
+      description: `1시간을 하면 200kcal가 소모돼요!`,
       image: require('../assets/images/tennis.png'),
       badge: { text: '유산소', color: '#85DFAC' },
     },
@@ -40,7 +43,9 @@ const RecommendCard = () => {
   return (
     <View style={styles.container}>
       {/* 운동 추천 */}
-      <Text style={styles.sectionTitle}>152kcal에 딱 맞는 운동</Text>
+      <Text style={styles.sectionTitle}>
+        {consumedCalories}kcal에 딱 맞는 운동
+      </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
         {exerciseData.map((item, index) => (
           <InfoCardItem key={index} {...item} variant="recommend" />
@@ -48,7 +53,9 @@ const RecommendCard = () => {
       </ScrollView>
 
       {/* 음식 추천 */}
-      <Text style={styles.sectionTitle}>남은 1848kcal는 이렇게 채워봐요!</Text>
+      <Text style={styles.sectionTitle}>
+        남은 {remainingCalories}kcal는 이렇게 채워봐요!
+      </Text>
       <ScrollView horizontal showsHorizontalScrollIndicator={false} style={styles.slider}>
         {foodData.map((item, index) => (
           <InfoCardItem key={index} {...item} variant="recommend" />

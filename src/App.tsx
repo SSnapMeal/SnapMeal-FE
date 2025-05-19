@@ -15,6 +15,9 @@ import AnalysisScreen from './analysisPage/AnalysisScreen';
 import ReportScreen from './analysisPage/ReportScreen';
 import PhotoPreviewScreen from './analysisPage/PhotoPreviewScreen';
 import MealRecordScreen from './analysisPage/MealRecordScreen';
+import FoodSearchScreen from './analysisPage/FoodSearchScreen';
+import MealDetailScreen from './analysisPage/MealDetailScreen';
+
 import MyPageScreen from './myPage/MyPageScreen';
 import CommunityScreen from './communityPage/CommunityScreen';
 
@@ -42,6 +45,8 @@ const App = () => {
             <Stack.Screen name="Report" component={ReportScreen} />
             <Stack.Screen name="PhotoPreview" component={PhotoPreviewScreen} />
             <Stack.Screen name="MealRecord" component={MealRecordScreen} />
+            <Stack.Screen name="FoodSearch" component={FoodSearchScreen} />
+            <Stack.Screen name="MealDetail" component={MealDetailScreen} />
             <Stack.Screen name="MyPage" component={MyPageScreen} />
             <Stack.Screen name="Community" component={CommunityScreen} />
             <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />

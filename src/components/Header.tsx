@@ -3,21 +3,28 @@ import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
 type HeaderProps = {
-  title: string;
+  title?: string;
   backgroundColor?: string;
+  showBackArrow?: boolean;
 };
 
-const Header = ({ title, backgroundColor = '#fff' }: HeaderProps) => {
+const Header = ({
+  title,
+  backgroundColor = '#fff',
+  showBackArrow = true, // ← 여기!
+}: HeaderProps) => {
   const navigation = useNavigation();
 
   return (
     <View style={[styles.header, { backgroundColor }]}>
-      <TouchableOpacity onPress={() => navigation.goBack()}>
-        <Image
-          source={require('../assets/images/backArrow-black.png')}
-          style={styles.backArrowImage}
-        />
-      </TouchableOpacity>
+      {showBackArrow && (
+        <TouchableOpacity onPress={() => navigation.goBack()}>
+          <Image
+            source={require('../assets/images/backArrow-black.png')}
+            style={styles.backArrowImage}
+          />
+        </TouchableOpacity>
+      )}
 
       <Text style={styles.title}>{title}</Text>
       <View style={{ width: 20 }} />
