@@ -48,7 +48,8 @@ const CustomInput: React.FC<CustomInputProps> = ({
             style={[styles.input, { color: textColor }]}
             placeholder={placeholder}
             placeholderTextColor={placeholderTextColor}
-            {...props}
+            value={props.value}
+            onChangeText={props.onChangeText}
           />
           {rightElement && <View style={styles.rightElement}>{rightElement}</View>}
         </View>

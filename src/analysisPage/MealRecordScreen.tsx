@@ -9,6 +9,7 @@ import LinearGradient from 'react-native-linear-gradient';
 import CustomInput from '../components/CustomInput';
 import CustomNumInput from '../components/CustomNumInput';
 import NutrientList from '../components/NutrientList';
+import { launchCamera } from 'react-native-image-picker';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type MealRecordRouteProp = RouteProp<RootStackParamList, 'MealRecord'>;

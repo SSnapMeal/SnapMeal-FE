@@ -1,0 +1,28 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8">
+  <title>Snapmeal 로그인 처리 중...</title>
+  <script>
+    window.onload = function () {
+      const params = new URLSearchParams(window.location.search);
+      const accessToken = params.get("accessToken");
+      const refreshToken = params.get("refreshToken");
+      const isNewUser = params.get("isNewUser") === "true";
+
+      const target = isNewUser ? 'profile-setup' : 'home';
+      const deeplink = `snapmeal://${target}?accessToken=${accessToken}&refreshToken=${refreshToken}`;
+
+      console.log("✅ 앱으로 이동:", deeplink);
+      window.location.href = deeplink;
+
+      setTimeout(() => {
+        document.body.innerText = "앱으로 이동하지 못했어요. 앱이 설치되어 있는지 확인해주세요.";
+      }, 2000);
+    };
+  </script>
+</head>
+<body>
+  앱으로 돌아가는 중입니다... 잠시만 기다려주세요 😊
+</body>
+</html>
