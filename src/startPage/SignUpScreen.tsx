@@ -7,7 +7,7 @@ import { RootStackParamList } from '../types/navigation';
 
 import LoginBackground from '../components/LoginBackground';
 import CustomInput from '../components/CustomInput'; // 입력창 컴포넌트
-import CustomNumInput from '../components/CustomNumInput';
+import { TextInput } from 'react-native-gesture-handler';
 
 const { height } = Dimensions.get('window');
 
@@ -16,11 +16,62 @@ type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList,
 const SignUpScreen = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const [step, setStep] = useState(1); // 현재 입력 단계를 관리
+  const [idHelper, setIdHelper] = useState('');
+  const [isIdTouched, setIsIdTouched] = useState(false);
+
+  const [isIdValid, setIsIdValid] = useState(true);
+  const [passwordHelper, setPasswordHelper] = useState('');
+  const [passwordCheckHelper, setPasswordCheckHelper] = useState('');
+  const [isPasswordValid, setIsPasswordValid] = useState(true);
+  const [isPasswordMatch, setIsPasswordMatch] = useState(true);
+  const [isPasswordTouched, setIsPasswordTouched] = useState(false);
+
+  const [emailHelper, setEmailHelper] = useState('');
+  const [isEmailValid, setIsEmailValid] = useState(true);
+  const [verificationCode, setVerificationCode] = useState('');
+  const [verificationHelper, setVerificationHelper] = useState('');
+  const [nameHelper, setNameHelper] = useState('');
+
+  const [passwordCheck, setPasswordCheck] = useState(''); // formData에 없으면 따로
   const [showVerification, setShowVerification] = useState(false); // 인증번호 입력창 보이기
   const [timer, setTimer] = useState(0); // 0이면 타이머 비활성
   const [isFemale, setIsFemale] = useState(true); // 여자가 기본 선택
+  const [formData, setFormData] = useState<{
+    userId: string;
+    password: string;
+    name: string;
+    email: string;
+    age: string;
+    gender: 'FEMALE' | 'MALE';
+    nickname: string;
+    type: string;
+  }>({
+    userId: '',
+    password: '',
+    name: '',
+    email: '',
+    age: '',
+    gender: 'FEMALE',
+    nickname: '',
+    type: 'NORMAL',
+  });
 
 
+  const handleSubmit = () => {
+    navigation.replace('ProfileSetting', {
+      userInfo: {
+        userId: formData.userId,
+        password: formData.password,
+        name: formData.name,
+        email: formData.email,
+        age: parseInt(formData.age, 10),
+        gender: formData.gender,
+        type: formData.type,
+      },
+    });
+  };
+
+  // 타이머
   useEffect(() => {
     if (timer === 0) return;
 
@@ -34,6 +85,7 @@ const SignUpScreen = () => {
     return () => clearInterval(interval);
   }, [timer]);
 
+  // 포맷타임
   const formatTime = (seconds: number): string => {
     const min = Math.floor(seconds / 60);
     const sec = seconds % 60;
@@ -83,15 +135,41 @@ const SignUpScreen = () => {
           {/* 오른쪽 영역 */}
           <View style={styles.sideBox}>
             {step === 3 ? (
-              <TouchableOpacity onPress={() => navigation.replace('ProfileSetting')}>
+              <TouchableOpacity
+                onPress={() => {
+                  console.log('✅ 버튼 눌림');
+                  handleSubmit();
+                }}
+              >
                 <Text style={styles.endButton}>완료</Text>
               </TouchableOpacity>
             ) : (
-              <TouchableOpacity onPress={() => setStep(prev => prev + 1)}>
+              <TouchableOpacity
+                onPress={() => {
+                  if (step === 1) {
+                    const isValidStep1 =
+                      isIdTouched &&
+                      isPasswordTouched &&
+                      idHelper === '' &&
+                      passwordHelper === '' &&
+                      passwordCheckHelper === '';
+
+                    if (isValidStep1) {
+                      setStep(prev => prev + 1);
+                    } else {
+                      console.log('❌ step 1 유효성 검사 실패');
+                    }
+                  }
+                  else {
+                    setStep(prev => prev + 1);
+                  }
+                }}
+              >
                 <Text style={styles.nextButton}>다음 &gt;&gt;</Text>
               </TouchableOpacity>
             )}
           </View>
+
         </View>
 
 
@@ -100,15 +178,60 @@ const SignUpScreen = () => {
           {step == 1 && (
             <>
               <View style={styles.inputGroup}>
-                <CustomInput label="아이디" placeholder="snap12" helperText="* 아이디를 입력해주세요" />
+                <CustomInput
+                  label="아이디"
+                  placeholder="snap12"
+                  helperText={isIdTouched && idHelper ? idHelper : ''}
+                  value={formData.userId}
+                  onChangeText={(text) => {
+                    setFormData((prev) => ({ ...prev, userId: text }));
+                    if (!isIdTouched) setIsIdTouched(true);
+
+                    if (text.length < 4 || text.length > 12) {
+                      setIdHelper('* 4~12자의 아이디를 입력해주세요');
+                    } else {
+                      setIdHelper('');
+                    }
+                  }}
+                />
+              </View>
+              <View style={styles.inputGroup}>
+                <CustomInput
+                  label="비밀번호"
+                  placeholder="snap1234^^"
+                  helperText={isPasswordTouched && passwordHelper ? passwordHelper : ''}
+                  value={formData.password}
+                  onChangeText={(text) => {
+                    setFormData((prev) => ({ ...prev, password: text }));
+                    if (!isPasswordTouched) setIsPasswordTouched(true);
+
+                    const hasSpecialChar = /[!@#$%^&*(),.?":{}|<>]/.test(text);
+                    if (text.length < 8 || !hasSpecialChar) {
+                      setPasswordHelper('* 8자 이상, 특수문자를 포함해주세요');
+                      setIsPasswordValid(false);
+                    } else {
+                      setPasswordHelper('');
+                      setIsPasswordValid(true);
+                    }
+                  }}
+                />
               </View>
 
               <View style={styles.inputGroup}>
-                <CustomInput label="비밀번호" placeholder="snap1234^^" helperText="* 비밀번호를 입력해주세요" />
-              </View>
-
-              <View style={styles.inputGroup}>
-                <CustomInput label="비밀번호 확인" placeholder="snap1234^^" helperText="* 비밀번호가 일치하지 않습니다" />
+                <CustomInput
+                  label="비밀번호 확인"
+                  placeholder="snap1234^^"
+                  helperText={passwordCheckHelper}
+                  value={passwordCheck}
+                  onChangeText={(text) => {
+                    setPasswordCheck(text);
+                    const match = text === formData.password;
+                    setIsPasswordMatch(match);
+                    setPasswordCheckHelper(
+                      match ? '' : '* 비밀번호가 일치하지 않습니다'
+                    );
+                  }}
+                />
               </View>
             </>
           )}
@@ -118,10 +241,24 @@ const SignUpScreen = () => {
                 <CustomInput
                   label="이메일"
                   placeholder="snap@gmail.com"
-                  helperText="* 안내메시지"
+                  helperText={emailHelper}
                   showButton={true}
                   onPressButton={handleSendVerification}
+                  value={formData.email}
+                  onChangeText={(text) => {
+                    setFormData((prev) => ({ ...prev, email: text }));
+
+                    const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+                    if (!emailRegex.test(text)) {
+                      setEmailHelper('* 유효한 이메일 형식을 입력해주세요');
+                      setIsEmailValid(false);
+                    } else {
+                      setEmailHelper('');
+                      setIsEmailValid(true);
+                    }
+                  }}
                 />
+
               </View>
 
               {showVerification && (
@@ -129,8 +266,18 @@ const SignUpScreen = () => {
                   <CustomInput
                     label="인증번호"
                     placeholder="1234"
-                    helperText="* 인증번호가 일치하지 않습니다"
+                    helperText={verificationHelper}
                     keyboardType="numeric"
+                    value={verificationCode}
+                    onChangeText={(text) => {
+                      setVerificationCode(text);
+                      // 아직 백 연결 안 됐으니까 숫자만 체크하자
+                      if (text.length !== 4 || isNaN(Number(text))) {
+                        setVerificationHelper('* 4자리 숫자를 입력해주세요');
+                      } else {
+                        setVerificationHelper('');
+                      }
+                    }}
                     rightElement={
                       timer === 0 ? (
                         <TouchableOpacity onPress={handleSendVerification}>
@@ -143,6 +290,7 @@ const SignUpScreen = () => {
                       )
                     }
                   />
+
                 </View>
               )}
             </>
@@ -151,40 +299,78 @@ const SignUpScreen = () => {
           {step === 3 && (
             <>
               <View style={styles.inputGroup}>
-                <CustomInput label="이름" placeholder="김스냅" helperText="* 이름을 입력해주세요" />
+                <CustomInput
+                  label="이름"
+                  placeholder="김스냅"
+                  helperText={nameHelper}
+                  value={formData.name}
+                  onChangeText={(text) => {
+                    setFormData((prev) => ({ ...prev, name: text }));
+                    // 한글 이름 유효성 검사: 2자 이상
+                    if (text.trim().length < 2) {
+                      setNameHelper('* 이름은 최소 2자 이상 입력해주세요');
+                    } else {
+                      setNameHelper('');
+                    }
+                  }}
+                />
+
               </View>
 
               {/* 나이 + 성별 */}
               <View style={[styles.inputGroup, { flexDirection: 'row', gap: 36, paddingHorizontal: 26 }]}>
                 {/* 나이 입력 */}
                 <View style={{ flex: 1 }}>
-                  <Text style={styles.inputLabel}>나이</Text>
-                  <View style={{ borderBottomWidth: 1, borderBottomColor: 'white' }}>
-                    <CustomNumInput
-                      label="나이"
+                  <Text style={{ color: '#fff', fontSize: 14, marginBottom: 6 }}>나이</Text>
+                  <View
+                    style={{
+                      borderBottomWidth: 1,
+                      borderBottomColor: '#fff',
+                      paddingVertical: 4,
+                    }}
+                  >
+                    <TextInput
                       placeholder="23"
-                      helperText="* 나이를 입력해주세요"
-                      labelColor="#fff"
-                      borderColor="#fff"
+                      placeholderTextColor="#aaa"
+                      keyboardType="numeric"
+                      value={formData.age}
+                      onChangeText={(text) =>
+                        setFormData((prev) => ({ ...prev, age: text }))
+                      }
+                      style={{
+                        fontSize: 16,
+                        color: '#fff',
+                        paddingVertical: 4,
+                        paddingHorizontal: 0,
+                      }}
                     />
-
                   </View>
-                  <Text style={styles.helperText}>* 안내메시지</Text>
+                  <Text style={{ color: '#fff', fontSize: 12, marginTop: 3 }}>
+                    * 나이를 입력해주세요
+                  </Text>
                 </View>
+
 
                 {/* 성별 선택 */}
                 <View style={{ flex: 1 }}>
                   <Text style={styles.inputLabel}>성별</Text>
-                  <View style={{ flexDirection: 'row', marginBottom: 4, gap: 7 }}>
+                  <View style={{ flexDirection: 'row', gap: 7 }}>
                     <TouchableOpacity
                       style={[styles.genderButton, !isFemale && styles.genderButtonActive]}
-                      onPress={() => setIsFemale(false)}
+                      onPress={() => {
+                        setIsFemale(false);
+                        setFormData((prev) => ({ ...prev, gender: 'MALE' }));
+                      }}
                     >
                       <Text style={[styles.genderText, !isFemale && styles.genderTextActive]}>남자</Text>
                     </TouchableOpacity>
+
                     <TouchableOpacity
                       style={[styles.genderButton, isFemale && styles.genderButtonActive]}
-                      onPress={() => setIsFemale(true)}
+                      onPress={() => {
+                        setIsFemale(true);
+                        setFormData((prev) => ({ ...prev, gender: 'FEMALE' }));
+                      }}
                     >
                       <Text style={[styles.genderText, isFemale && styles.genderTextActive]}>여자</Text>
                     </TouchableOpacity>

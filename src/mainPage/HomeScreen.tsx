@@ -16,6 +16,7 @@ import { RootStackParamList } from '../types/navigation';
 import Navigation from '../components/Navigation';
 import NutrientBarChart from '../components/NutrientBarChart';
 import MealCard from '../components/MealCard';
+import { launchCamera, CameraOptions, CameraType } from 'react-native-image-picker';
 
 const { height } = Dimensions.get('window');
 
@@ -32,11 +33,29 @@ const chartData = [
   { label: '기타', value: 20, color: '#C0C0C0' },
 ];
 
+const cameraOptions: CameraOptions = {
+  mediaType: 'photo',
+  cameraType: 'back' as CameraType,
+  saveToPhotos: true,
+};
+
 const HomeScreen = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
+  const userName = '스냅';
+
   const handlePress = () => {
-    console.log('로그인 시도!');
-    // navigation.navigate('Home');
+    launchCamera(cameraOptions, response => {
+      if (response.didCancel) {
+        console.log('사용자가 촬영을 취소함');
+      } else if (response.errorCode) {
+        console.error('카메라 오류:', response.errorMessage);
+      } else if (response.assets && response.assets.length > 0) {
+        const imageUri = response.assets[0].uri;
+        if (imageUri) {
+          navigation.navigate('MealRecord', { imageUri, rawNutrients: [], });
+        }
+      }
+    });
   };
 
   return (
@@ -49,7 +68,7 @@ const HomeScreen = () => {
           <ScrollView contentContainerStyle={[styles.scrollContent, { paddingBottom: 100 }]}>
             <View style={styles.greetingSection}>
               <Text style={styles.helloMent}>안녕하세요!</Text>
-              <Text style={styles.userMent}>스냅님 :)</Text>
+              <Text style={styles.userMent}>{userName}님 :)</Text>
               <Image source={require('../assets/images/profile.png')} style={styles.profileImg} resizeMode="cover" />
             </View>
 
@@ -74,7 +93,7 @@ const HomeScreen = () => {
                 <MealCard backgroundColor="#FFA3A3" title="저녁" kcal="360kcal" nutrients="단백질 12g, 탄수화물 30g, ..." />
               </ScrollView>
             </View>
-            <View style={{ paddingHorizontal: 35}}>
+            <View style={{ paddingHorizontal: 35 }}>
               <NutrientBarChart data={chartData} />
             </View>
           </ScrollView>

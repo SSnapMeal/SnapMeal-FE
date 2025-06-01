@@ -9,7 +9,17 @@ export type RootStackParamList = {
   Welcome: undefined;
   FindAccount: undefined;
   SignUp: undefined;
-  ProfileSetting: undefined;
+  ProfileSetting: {
+    userInfo?: {
+      userId: string;
+      password: string;
+      name: string;
+      email: string;
+      age: number;
+      gender: 'FEMALE' | 'MALE';
+      type: string;
+    };
+  };
   SignupComplete: undefined;
 
   Home: undefined;
