@@ -14,28 +14,27 @@ const { height } = Dimensions.get('window');
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
 const SignUpScreen = () => {
-  const navigation = useNavigation<WelcomeScreenNavigationProp>();
-  const [step, setStep] = useState(1); // 현재 입력 단계를 관리
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList, 'Welcome'>>();
+  const [step, setStep] = useState(1);
   const [idHelper, setIdHelper] = useState('');
   const [isIdTouched, setIsIdTouched] = useState(false);
-
-  const [isIdValid, setIsIdValid] = useState(true);
+  const [isPasswordTouched, setIsPasswordTouched] = useState(false);
   const [passwordHelper, setPasswordHelper] = useState('');
   const [passwordCheckHelper, setPasswordCheckHelper] = useState('');
-  const [isPasswordValid, setIsPasswordValid] = useState(true);
   const [isPasswordMatch, setIsPasswordMatch] = useState(true);
-  const [isPasswordTouched, setIsPasswordTouched] = useState(false);
+  const [isStep1Valid, setIsStep1Valid] = useState(false);
 
+  const [passwordCheck, setPasswordCheck] = useState('');
   const [emailHelper, setEmailHelper] = useState('');
-  const [isEmailValid, setIsEmailValid] = useState(true);
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationHelper, setVerificationHelper] = useState('');
+  const [showVerification, setShowVerification] = useState(false);
+  const [timer, setTimer] = useState(0);
   const [nameHelper, setNameHelper] = useState('');
+  const [isFemale, setIsFemale] = useState(true);
 
-  const [passwordCheck, setPasswordCheck] = useState(''); // formData에 없으면 따로
-  const [showVerification, setShowVerification] = useState(false); // 인증번호 입력창 보이기
-  const [timer, setTimer] = useState(0); // 0이면 타이머 비활성
-  const [isFemale, setIsFemale] = useState(true); // 여자가 기본 선택
+  const [isPasswordValid, setIsPasswordValid] = useState(true);
+  const [isEmailValid, setIsEmailValid] = useState(true);
   const [formData, setFormData] = useState<{
     userId: string;
     password: string;
@@ -55,6 +54,44 @@ const SignUpScreen = () => {
     nickname: '',
     type: 'NORMAL',
   });
+
+  useEffect(() => {
+    const valid =
+      isIdTouched &&
+      isPasswordTouched &&
+      idHelper === '' &&
+      passwordHelper === '' &&
+      passwordCheckHelper === '' &&
+      isPasswordMatch === true;
+
+    setIsStep1Valid(valid);
+  }, [formData.userId, formData.password, passwordCheck, idHelper, passwordHelper, passwordCheckHelper, isPasswordMatch]);
+
+  useEffect(() => {
+    const valid =
+      isIdTouched &&
+      isPasswordTouched &&
+      idHelper === '' &&
+      passwordHelper === '' &&
+      passwordCheckHelper === '' &&
+      isPasswordMatch === true;
+
+    setIsStep1Valid(valid);
+  }, [
+    formData.userId,
+    formData.password,
+    passwordCheck,
+    idHelper,
+    passwordHelper,
+    passwordCheckHelper,
+    isPasswordMatch
+  ]);
+
+  useEffect(() => {
+    const match = passwordCheck === formData.password;
+    setIsPasswordMatch(match);
+    setPasswordCheckHelper(match ? '' : '* 비밀번호가 일치하지 않습니다');
+  }, [formData.password, passwordCheck]);
 
 
   const handleSubmit = () => {
@@ -145,27 +182,25 @@ const SignUpScreen = () => {
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
+                disabled={step === 1 && !isStep1Valid}
                 onPress={() => {
-                  if (step === 1) {
-                    const isValidStep1 =
-                      isIdTouched &&
-                      isPasswordTouched &&
-                      idHelper === '' &&
-                      passwordHelper === '' &&
-                      passwordCheckHelper === '';
-
-                    if (isValidStep1) {
-                      setStep(prev => prev + 1);
-                    } else {
-                      console.log('❌ step 1 유효성 검사 실패');
-                    }
-                  }
-                  else {
+                  if (step === 1 && isStep1Valid) {
                     setStep(prev => prev + 1);
+                  } else if (step !== 1) {
+                    setStep(prev => prev + 1);
+                  } else {
+                    console.log('❌ step 1 유효성 검사 실패');
                   }
                 }}
               >
-                <Text style={styles.nextButton}>다음 &gt;&gt;</Text>
+                <Text
+                  style={[
+                    styles.nextButtonText,
+                    step === 1 && !isStep1Valid && { color: '#aaa' }
+                  ]}
+                >
+                  다음 &gt;&gt;
+                </Text>
               </TouchableOpacity>
             )}
           </View>
@@ -418,6 +453,16 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '700',
   },
+  nextButtonContainer: {
+
+  },
+
+  nextButtonText: {
+    color: '#fff', // 기본: 검정 글자
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+
   endButton: {
     color: '#38B000',
     fontSize: 16,

@@ -30,48 +30,55 @@ const WelcomeScreen = () => {
   const KAKAO_AUTH_URL = `https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D0fe99e36a3be9338e0997100509d18f8%26redirect_uri%3Dhttp%253A%252F%252Fapi.snapmeal.store%252Fusers%252Foauth%252Fkakao%252Fcallback%26through_account%3Dtrue#login`;
 
   const handleNormalLogin = async () => {
-    let isValid = true;
+  let isValid = true;
 
-    if (userId.trim() === '') {
-      setUserIdError('* 아이디를 입력해주세요');
-      isValid = false;
-    } else {
-      setUserIdError('');
-    }
+  if (userId.trim() === '') {
+    setUserIdError('* 아이디를 입력해주세요');
+    isValid = false;
+  } else {
+    setUserIdError('');
+  }
 
-    if (password.trim() === '') {
-      setPasswordError('* 비밀번호를 입력해주세요');
-      isValid = false;
-    } else if (password.trim().length < 8) {
-      setPasswordError('* 비밀번호는 8자 이상이어야 합니다');
-      isValid = false;
-    } else {
-      setPasswordError('');
-    }
+  if (password.trim() === '') {
+    setPasswordError('* 비밀번호를 입력해주세요');
+    isValid = false;
+  } else if (password.trim().length < 8) {
+    setPasswordError('* 비밀번호는 8자 이상이어야 합니다');
+    isValid = false;
+  } else {
+    setPasswordError('');
+  }
 
-    if (!isValid) return;
+  if (!isValid) return;
 
-    try {
-      const response = await axios.post('http://api.snapmeal.store/users/sign-in', {
-        userId: userId.trim(),
-        password: password.trim(),
-      });
+  try {
+    const response = await axios.post('http://api.snapmeal.store/users/sign-in', {
+      userId: userId.trim(),
+      password: password.trim(),
+    });
 
-      const { accessToken, refreshToken } = response.data.tokenServiceResponse;
-      const role = response.data.role;
+    const { accessToken, refreshToken } = response.data.tokenServiceResponse;
+    const role = response.data.role;
 
-      // 토큰 저장
-      await AsyncStorage.setItem('accessToken', accessToken);
-      await AsyncStorage.setItem('refreshToken', refreshToken);
+    // 콘솔 로그 추가
+    console.log('로그인 성공');
+    console.log('User ID:', userId);
+    console.log('Role:', role);
+    console.log('Access Token:', accessToken);
 
-      // 홈으로 이동
-      navigation.navigate('Home');
+    // 토큰 저장
+    await AsyncStorage.setItem('accessToken', accessToken);
+    await AsyncStorage.setItem('refreshToken', refreshToken);
 
-    } catch (error) {
-      console.error(error);
-      Alert.alert('로그인 실패', '아이디 또는 비밀번호가 잘못되었습니다.');
-    }
-  };
+    // 홈으로 이동
+    navigation.navigate('Home');
+
+  } catch (error) {
+    console.error(error);
+    Alert.alert('로그인 실패', '아이디 또는 비밀번호가 잘못되었습니다.');
+  }
+};
+
 
   const handleKakaoLogin = () => {
     console.log('🟡 카카오 로그인 버튼 클릭됨!');

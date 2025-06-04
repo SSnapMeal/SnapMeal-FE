@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import {StyleSheet,Text,SafeAreaView,TouchableOpacity,ScrollView,Image,StatusBar,Platform,PermissionsAndroid,} from 'react-native';
+import { StyleSheet, Text, SafeAreaView, TouchableOpacity, ScrollView, Image, StatusBar, Platform, PermissionsAndroid, } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -13,6 +13,7 @@ import { RootStackParamList } from '../types/navigation';
 import TabSelector from '../components/TabSelecter';
 import CameraMenu from '../components/CameraMenu';
 import CalorieProgress from '../components/CalorieProgress';
+import axios from 'axios';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type StatusType = '과다' | '적정' | '부족';
@@ -93,12 +94,44 @@ const AnalysisScreen = () => {
     quality: 0.8 as const,
   };
 
+  const analyzeImage = async (imageUri: string) => {
+    try {
+      const formData = new FormData();
+      formData.append('file', {
+        uri: imageUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      });
+
+      const response = await axios.post('http://api.snapmeal.store/predict', formData, {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+        },
+      });
+
+      console.log('✅ 분석 결과:', response.data);
+
+      // 예: 분석 결과와 함께 다음 화면으로 이동
+      navigation.navigate('PhotoPreview', {
+        imageUri,
+        // rawNutrients: response.data.nutrients, (필요 시)
+      });
+
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ 분석 실패:', error.response?.data || error.message);
+      } else {
+        console.error('❌ 알 수 없는 에러:', error);
+      }
+    }
+  };
+
   const openGallery = () => {
-    launchImageLibrary(imageOptions, (response) => {
+    launchImageLibrary(imageOptions, async (response) => {
       if (response.didCancel || response.errorCode) return;
       const selectedImage = response.assets?.[0];
       if (selectedImage?.uri) {
-        navigation.navigate('PhotoPreview', { imageUri: selectedImage.uri });
+        await analyzeImage(selectedImage.uri);
       }
     });
     setCameraMenuVisible(false);
@@ -111,14 +144,15 @@ const AnalysisScreen = () => {
       return;
     }
 
-    launchCamera(imageOptions, (response) => {
+    launchCamera(imageOptions, async (response) => {
       if (response.didCancel || response.errorCode) return;
       const capturedImage = response.assets?.[0];
       if (capturedImage?.uri) {
-        navigation.navigate('PhotoPreview', { imageUri: capturedImage.uri });
+        await analyzeImage(capturedImage.uri);
       }
     });
   };
+
 
   return (
     <>
