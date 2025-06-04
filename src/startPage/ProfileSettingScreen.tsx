@@ -69,13 +69,25 @@ const ProfileSettingScreen = () => {
         const finalPayload = {
             ...userInfo,
             nickname: nickname,
-            type: userInfo.type, // 고정 or 태그 기반 가공
+            type: userInfo.type,
+        };
+
+        const dietPayload = {
+            selectedTypes: selectedTags, // 서버 요구 형식에 맞게 전송
         };
 
         try {
-            const res = await axios.post('http://api.snapmeal.store/users/sign-up', finalPayload);
-            console.log('🚀 최종 전송할 데이터:', finalPayload);
+            // 1. 회원가입 API 먼저 호출
+            const signupRes = await axios.post('http://api.snapmeal.store/users/sign-up', finalPayload);
+            console.log('✅ 회원가입 완료:', signupRes.data);
+
+            // 2. 식사 유형 API 호출
+            const dietRes = await axios.post('http://api.snapmeal.store/api/diet-type', dietPayload);
+            console.log('✅ 식사 유형 등록 완료:', dietRes.data);
+
+            // 3. 성공 시 이동
             navigation.navigate('SignupComplete');
+
         } catch (error: any) {
             if (axios.isAxiosError(error)) {
                 console.error('❌ 서버 응답 에러:', error.response?.data || error.message);
