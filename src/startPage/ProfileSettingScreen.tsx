@@ -81,11 +81,7 @@ const ProfileSettingScreen = () => {
             const signupRes = await axios.post('http://api.snapmeal.store/users/sign-up', finalPayload);
             console.log('✅ 회원가입 완료:', signupRes.data);
 
-            // 2. 식사 유형 API 호출
-            const dietRes = await axios.post('http://api.snapmeal.store/api/diet-type', dietPayload);
-            console.log('✅ 식사 유형 등록 완료:', dietRes.data);
-
-            // 3. 성공 시 이동
+            // 2. 성공 시 이동
             navigation.navigate('SignupComplete');
 
         } catch (error: any) {

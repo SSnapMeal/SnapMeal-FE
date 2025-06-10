@@ -14,6 +14,7 @@ import TabSelector from '../components/TabSelecter';
 import CameraMenu from '../components/CameraMenu';
 import CalorieProgress from '../components/CalorieProgress';
 import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type StatusType = '과다' | '적정' | '부족';
@@ -95,36 +96,73 @@ const AnalysisScreen = () => {
   };
 
   const analyzeImage = async (imageUri: string) => {
-    try {
-      const formData = new FormData();
-      formData.append('file', {
-        uri: imageUri,
-        name: 'photo.jpg',
-        type: 'image/jpeg',
-      });
+  try {
+    const token = await AsyncStorage.getItem('accessToken'); // ✅ 토큰 불러오기
 
-      const response = await axios.post('http://api.snapmeal.store/predict', formData, {
+    // ✅ 1. 분석 요청
+    const predictFormData = new FormData();
+    predictFormData.append('file', {
+      uri: imageUri,
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+    } as any);
+
+    const predictRes = await axios.post(
+      'http://api.snapmeal.store/predict',
+      predictFormData,
+      {
         headers: {
           'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`, // ✅ 인증 추가
         },
-      });
-
-      console.log('✅ 분석 결과:', response.data);
-
-      // 예: 분석 결과와 함께 다음 화면으로 이동
-      navigation.navigate('PhotoPreview', {
-        imageUri,
-        // rawNutrients: response.data.nutrients, (필요 시)
-      });
-
-    } catch (error: any) {
-      if (axios.isAxiosError(error)) {
-        console.error('❌ 분석 실패:', error.response?.data || error.message);
-      } else {
-        console.error('❌ 알 수 없는 에러:', error);
       }
+    );
+
+    console.log('✅ 분석 결과:', predictRes.data);
+
+    const detections = predictRes.data.detections || [];
+    const classNames = [...new Set(detections.map((d: any) => d.class_name))] as string[];
+
+    console.log('🎯 감지된 음식 목록:', classNames);
+
+    // ✅ 2. 이미지 업로드 요청
+    const uploadFormData = new FormData();
+    uploadFormData.append('file', {
+      uri: imageUri,
+      name: 'photo.jpg',
+      type: 'image/jpeg',
+    } as any);
+
+    const uploadRes = await axios.post(
+      'http://api.snapmeal.store/images/upload-predict',
+      uploadFormData,
+      {
+        headers: {
+          'Content-Type': 'multipart/form-data',
+          'Authorization': `Bearer ${token}`, // ✅ 인증 추가
+        },
+      }
+    );
+
+    const imageId = uploadRes.data.image_id;
+    console.log('🆔 이미지 업로드 성공, imageId:', imageId);
+
+    // ✅ 다음 화면으로 이동
+    navigation.navigate('ImageCheck', {
+      imageUri,
+      classNames,
+      imageId,
+    });
+
+  } catch (error: any) {
+    if (axios.isAxiosError(error)) {
+      console.error('❌ 분석 또는 업로드 실패:', error.response?.data || error.message);
+    } else {
+      console.error('❌ 알 수 없는 에러:', error);
     }
-  };
+  }
+};
+
 
   const openGallery = () => {
     launchImageLibrary(imageOptions, async (response) => {

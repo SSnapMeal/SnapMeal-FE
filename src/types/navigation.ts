@@ -21,7 +21,6 @@ export type RootStackParamList = {
     };
   };
   SignupComplete: undefined;
-
   Home: undefined;
 
   Analysis: {
@@ -32,24 +31,38 @@ export type RootStackParamList = {
     protein: string;
     tag: '과다' | '적정' | '부족';
   };
+
   Report: undefined;
-  PhotoPreview: { imageUri: string };
+
+  ImageCheck: {
+    imageUri: string;
+    classNames: string[];
+    imageId: number;
+  };
+
+  PhotoPreview: {
+    imageUri: string;
+    classNames: string[];
+    imageId: number;
+  };
+
   MealRecord: {
     imageUri: string;
     rawNutrients: NutrientItem[];
     selectedMenu?: string;
     selectedKcal?: number;
   };
+
   FoodSearch: {
     imageUri: string;
     rawNutrients: NutrientItem[];
   };
+
   MealDetail: {
     imageUri: string;
   };
 
   Community: undefined;
-
   MyPage: undefined;
   ProfileEdit: undefined;
   EditGoal: undefined;
