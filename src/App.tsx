@@ -13,6 +13,7 @@ import SignupCompleteScreen from './startPage/SignupCompleteScreen';
 import HomeScreen from './mainPage/HomeScreen';
 import AnalysisScreen from './analysisPage/AnalysisScreen';
 import ReportScreen from './analysisPage/ReportScreen';
+import ImageCheckScreen from './analysisPage/ImageCheckScreen';
 import PhotoPreviewScreen from './analysisPage/PhotoPreviewScreen';
 import MealRecordScreen from './analysisPage/MealRecordScreen';
 import FoodSearchScreen from './analysisPage/FoodSearchScreen';
@@ -43,6 +44,7 @@ const App = () => {
             <Stack.Screen name="Home" component={HomeScreen} />
             <Stack.Screen name="Analysis" component={AnalysisScreen} />
             <Stack.Screen name="Report" component={ReportScreen} />
+            <Stack.Screen name="ImageCheck" component={ImageCheckScreen} />
             <Stack.Screen name="PhotoPreview" component={PhotoPreviewScreen} />
             <Stack.Screen name="MealRecord" component={MealRecordScreen} />
             <Stack.Screen name="FoodSearch" component={FoodSearchScreen} />

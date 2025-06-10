@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, TextInput, StyleSheet } from 'react-native';
 
 type NutrientItem = {
@@ -16,6 +16,10 @@ interface NutrientListProps {
 
 const NutrientList: React.FC<NutrientListProps> = ({ data, editable = false }) => {
   const [localData, setLocalData] = useState(data);
+  // ✅ props.data가 바뀔 때마다 localData 업데이트
+  useEffect(() => {
+    setLocalData(data);
+  }, [data]);
 
   const handleChangeGrams = (index: number, newValue: string) => {
     const updatedData = [...localData];
