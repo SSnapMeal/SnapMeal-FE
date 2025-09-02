@@ -1,74 +1,78 @@
 import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  StyleSheet,
-  TouchableOpacity,
-  TextInput,
-  ScrollView,
-  Platform,
-} from 'react-native';
+import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
 import Header from '../components/Header';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import CustomInput from '../components/CustomInput';
 import MealTimeSelector from '../components/MealTimeSelector';
 import { RootStackParamList } from '../types/navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { Image } from 'react-native';
 import axios from 'axios';
-import * as mime from 'react-native-mime-types';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
+type MealDetailRouteProp = RouteProp<RootStackParamList, 'MealDetail'>;
 
 const MealDetailScreen = () => {
   const [selectedTime, setSelectedTime] = useState('아침');
   const [memo, setMemo] = useState('');
   const [place, setPlace] = useState('');
   const navigation = useNavigation<Navigation>();
-  const route = useRoute<RouteProp<RootStackParamList, 'MealDetail'>>();
-  const { imageUri } = route.params;
+  const route = useRoute<MealDetailRouteProp>();
+  const { imageUri, rawNutrients, selectedMenu = '', selectedKcal = 0, nutritionId = 8 } = route.params;
 
-  const uploadImage = async () => {
-    if (!imageUri) return;
-
-    const fileName = imageUri.split('/').pop() || 'image.jpg';
-    const fileType = mime.lookup(fileName) || 'image/jpeg';
-
-    const formData = new FormData();
-    formData.append('file', {
-      uri: Platform.OS === 'ios' ? imageUri.replace('file://', '') : imageUri,
-      name: fileName,
-      type: fileType,
-    } as any);
-
+  const uploadMeal = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
-
       if (!token) {
-        console.warn('⚠️ 토큰이 없습니다. 로그인 상태를 확인하세요.');
+        console.warn('⚠️ 토큰이 없습니다. 로그인 상태 확인!');
         return;
       }
 
-      const response = await axios.post('http://api.snapmeal.store/images/upload', formData, {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          Authorization: `Bearer ${token}`,
-        },
-      });
+      const timeMap: Record<string, string> = {
+        '아침': 'BREAKFAST',
+        '점심': 'LUNCH',
+        '저녁': 'DINNER',
+      };
+      const apiMealType = timeMap[selectedTime] || 'DINNER';
 
-      console.log('업로드 성공:', response.data);
+      // ✅ topNutrients 추출 (내림차순으로 상위 2개)
+      const sortedNutrients = [...rawNutrients].sort((a, b) => b.grams - a.grams);
+      const topNutrients = sortedNutrients.slice(0, 2).map(item => ({
+        name: item.label,
+        value: `${item.grams}g`
+      }));
+
+      const mealResponse = await axios.post(
+        'http://api.snapmeal.store/meals',
+        {
+          nutritionId,
+          memo,
+          location: place,
+          meal_type: apiMealType,
+          title: selectedMenu,
+          imageUrl: imageUri,
+          tag: '적정',
+        },
+        {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          }
+        }
+      );
+
+      console.log('식사 등록 성공:', mealResponse.data);
 
       navigation.navigate('Analysis', {
         imageSource: { uri: imageUri },
-        title: '샐러드 (1757kcal)',
+        title: `${selectedMenu} (${selectedKcal}kcal)`,
         mealTime: selectedTime,
-        sugar: '77g (14%)',
-        protein: '77g (24%)',
-        tag: '부족',
+        topNutrients: topNutrients,
+        tag: '적정',
       });
+
     } catch (error: any) {
-      console.error('업로드 실패:', error.response?.status, error.response?.data);
+      console.error('등록 실패:', error.response?.status, error.response?.data);
     }
   };
 
@@ -78,7 +82,7 @@ const MealDetailScreen = () => {
         <Text style={styles.prevBtn}>{'<<'} 이전</Text>
       </TouchableOpacity>
 
-      <TouchableOpacity style={styles.nextButton} onPress={uploadImage}>
+      <TouchableOpacity style={styles.nextButton} onPress={uploadMeal}>
         <Text style={styles.nextBtn}>완료</Text>
       </TouchableOpacity>
 

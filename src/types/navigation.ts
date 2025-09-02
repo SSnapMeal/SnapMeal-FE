@@ -5,6 +5,11 @@ export interface NutrientItem {
   label: string;
 }
 
+export type Nutrient = {
+  name: string;
+  value: string;
+};
+
 export type RootStackParamList = {
   Welcome: undefined;
   FindAccount: undefined;
@@ -27,10 +32,10 @@ export type RootStackParamList = {
     imageSource: { uri: string } | any;
     title: string;
     mealTime: string;
-    sugar: string;
-    protein: string;
+    topNutrients: Nutrient[];
     tag: '과다' | '적정' | '부족';
   };
+
 
   Report: undefined;
 
@@ -44,6 +49,7 @@ export type RootStackParamList = {
     imageUri: string;
     classNames: string[];
     imageId: number;
+    nutritionId: number;
   };
 
   MealRecord: {
@@ -51,18 +57,30 @@ export type RootStackParamList = {
     rawNutrients: NutrientItem[];
     selectedMenu?: string;
     selectedKcal?: number;
+    nutritionId: number;
   };
 
   FoodSearch: {
     imageUri: string;
     rawNutrients: NutrientItem[];
+    selectedMenu?: string;
+    selectedKcal?: number;
+    nutritionId: number;
   };
 
   MealDetail: {
     imageUri: string;
+    rawNutrients: NutrientItem[];
+    selectedMenu?: string;
+    selectedKcal?: number;
+    nutritionId: number;
   };
 
   Community: undefined;
+  ChallengeExplorer: undefined;
+  ChallengeActive: undefined;
+  ChallengeDone: undefined;
+  ChallengeDetail: { id?: string; title?: string } | undefined;
   MyPage: undefined;
   ProfileEdit: undefined;
   EditGoal: undefined;

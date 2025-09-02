@@ -29,6 +29,10 @@ const SignUpScreen = () => {
   const [verificationCode, setVerificationCode] = useState('');
   const [verificationHelper, setVerificationHelper] = useState('');
   const [showVerification, setShowVerification] = useState(false);
+  const [isVerificationValid, setIsVerificationValid] = useState(false);
+  const [isNameValid, setIsNameValid] = useState(false);
+  const [isAgeValid, setIsAgeValid] = useState(false);
+
   const [timer, setTimer] = useState(0);
   const [nameHelper, setNameHelper] = useState('');
   const [isFemale, setIsFemale] = useState(true);
@@ -173,16 +177,29 @@ const SignUpScreen = () => {
           <View style={styles.sideBox}>
             {step === 3 ? (
               <TouchableOpacity
+                disabled={
+                  (step === 3 && (!isNameValid || !isAgeValid || !formData.gender))
+                }
                 onPress={() => {
                   console.log('✅ 버튼 눌림');
                   handleSubmit();
                 }}
               >
-                <Text style={styles.endButton}>완료</Text>
+                <Text
+                  style={[
+                    styles.endButton,
+                    (step === 3 && (!isNameValid || !isAgeValid || !formData.gender)) && { color: '#aaa' }
+                  ]}
+                >
+                  완료
+                </Text>
               </TouchableOpacity>
             ) : (
               <TouchableOpacity
-                disabled={step === 1 && !isStep1Valid}
+                disabled={
+                  (step === 1 && !isStep1Valid) ||
+                  (step === 2 && (!isEmailValid || !isVerificationValid))
+                }
                 onPress={() => {
                   if (step === 1 && isStep1Valid) {
                     setStep(prev => prev + 1);
@@ -196,7 +213,8 @@ const SignUpScreen = () => {
                 <Text
                   style={[
                     styles.nextButtonText,
-                    step === 1 && !isStep1Valid && { color: '#aaa' }
+                    ((step === 1 && !isStep1Valid) ||
+                      (step === 2 && (!isEmailValid || !isVerificationValid))) && { color: '#aaa' }
                   ]}
                 >
                   다음 &gt;&gt;
@@ -204,7 +222,6 @@ const SignUpScreen = () => {
               </TouchableOpacity>
             )}
           </View>
-
         </View>
 
 
@@ -226,6 +243,13 @@ const SignUpScreen = () => {
                       setIdHelper('* 4~12자의 아이디를 입력해주세요');
                     } else {
                       setIdHelper('');
+                    }
+
+                    const ageNum = Number(text);
+                    if (!isNaN(ageNum) && ageNum > 0 && ageNum <= 120) {
+                      setIsAgeValid(true);
+                    } else {
+                      setIsAgeValid(false);
                     }
                   }}
                 />
@@ -309,9 +333,12 @@ const SignUpScreen = () => {
                       // 아직 백 연결 안 됐으니까 숫자만 체크하자
                       if (text.length !== 4 || isNaN(Number(text))) {
                         setVerificationHelper('* 4자리 숫자를 입력해주세요');
+                        setIsVerificationValid(false);
                       } else {
                         setVerificationHelper('');
+                        setIsVerificationValid(true);
                       }
+
                     }}
                     rightElement={
                       timer === 0 ? (
@@ -341,12 +368,14 @@ const SignUpScreen = () => {
                   value={formData.name}
                   onChangeText={(text) => {
                     setFormData((prev) => ({ ...prev, name: text }));
-                    // 한글 이름 유효성 검사: 2자 이상
                     if (text.trim().length < 2) {
                       setNameHelper('* 이름은 최소 2자 이상 입력해주세요');
+                      setIsNameValid(false);
                     } else {
                       setNameHelper('');
+                      setIsNameValid(true);
                     }
+
                   }}
                 />
 
@@ -369,9 +398,16 @@ const SignUpScreen = () => {
                       placeholderTextColor="#aaa"
                       keyboardType="numeric"
                       value={formData.age}
-                      onChangeText={(text) =>
-                        setFormData((prev) => ({ ...prev, age: text }))
-                      }
+                      onChangeText={(text) => {
+                        setFormData((prev) => ({ ...prev, age: text }));
+
+                        const ageNum = Number(text);
+                        if (!isNaN(ageNum) && ageNum > 0 && ageNum <= 120) {
+                          setIsAgeValid(true);
+                        } else {
+                          setIsAgeValid(false);
+                        }
+                      }}
                       style={{
                         fontSize: 16,
                         color: '#fff',
@@ -380,9 +416,12 @@ const SignUpScreen = () => {
                       }}
                     />
                   </View>
-                  <Text style={{ color: '#fff', fontSize: 12, marginTop: 3 }}>
-                    * 나이를 입력해주세요
-                  </Text>
+                  {!isAgeValid && (
+                    <Text style={{ color: '#fff', fontSize: 12, marginTop: 3 }}>
+                      * 나이를 입력해주세요
+                    </Text>
+                  )}
+
                 </View>
 
 
@@ -417,7 +456,7 @@ const SignUpScreen = () => {
           )}
 
         </View>
-      </SafeAreaView>
+      </SafeAreaView >
     </>
   );
 };

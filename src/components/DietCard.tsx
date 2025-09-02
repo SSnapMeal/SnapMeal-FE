@@ -1,19 +1,28 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
-type StatusType = '과다' | '적정' | '부족';
+export type StatusType = '과다' | '적정' | '부족';
 
-type CardData = {
+// 챌린지 상태 추가
+export type ChallengeState = '참여전' | '참여중' | '실패' | '성공';
+
+export type Nutrient = {
+  name: string;
+  value: string;
+};
+
+export type CardData = {
   imageSource: any;
   title: string;
-  mealTime: string;
-  sugar: string;
-  protein: string;
-  tag: StatusType;
+  mealTime?: string;
+  topNutrients?: Nutrient[];
+  tag?: StatusType;
 };
 
 type DietCardProps = {
   additionalMeal?: CardData;
+  variant?: 'default' | 'challenge';
+  challengeState?: ChallengeState; // ✅ 챌린지 상태 prop 추가
 };
 
 const statusColors: Record<StatusType, string> = {
@@ -22,53 +31,114 @@ const statusColors: Record<StatusType, string> = {
   부족: '#FBE19A',
 };
 
-const DietCard: React.FC<DietCardProps> = ({ additionalMeal }) => {
-  const cardData: CardData[] = [
-    {
-      imageSource: require('../assets/images/food_sample.png'),
-      title: '샐러드 (152kcal)',
-      mealTime: '아침',
-      sugar: '14g (14%)',
-      protein: '14g (24%)',
-      tag: '부족',
-    },
-    {
-      imageSource: require('../assets/images/food_sample.png'),
-      title: '닭가슴살 (220kcal)',
-      mealTime: '점심',
-      sugar: '2g (2%)',
-      protein: '25g (45%)',
-      tag: '적정',
-    },
-  ];
+// 챌린지 상태별 스타일 매핑
+const challengeStyles: Record<ChallengeState, any> = {
+  참여전: {
+    shadowColor: '#A9A9A9',
+    label: '참여 전',
+    labelColor: '#A9A9A9',
+  },
+  참여중: {
+    shadowColor: '#38B000',
+    label: '참여 중 (4/5)',
+    labelColor: '#38B000',
+  },
+  실패: {
+    shadowColor: '#E67373',
+    label: '실패',
+    labelColor: '#E67373',
+  },
+  성공: {
+    shadowColor: '#38B000',
+    label: '성공',
+    labelColor: '#38B000',
+  },
+};
 
-  const finalCardData = additionalMeal
-    ? [additionalMeal, ...cardData]
-    : cardData;
+const DietCard: React.FC<DietCardProps> = ({
+  additionalMeal,
+  variant = 'default',
+  challengeState,
+}) => {
+  if (!additionalMeal) {
+    return (
+      <View style={styles.emptyContainer}>
+        <Text style={styles.emptyText}>식단 정보가 없습니다.</Text>
+      </View>
+    );
+  }
+
+  const item = additionalMeal;
+  const hasMealTime = !!item.mealTime;
+  const hasNutrients = !!(item.topNutrients && item.topNutrients.length > 0);
+  const showChallengeReplacement =
+    variant === 'challenge' && !hasMealTime && !hasNutrients;
+
+  // 챌린지 모드일 때 상태별 스타일 선택
+  const currentChallenge =
+    variant === 'challenge' && challengeState
+      ? challengeStyles[challengeState]
+      : null;
 
   return (
-    <>
-      {finalCardData.map((item, index) => (
-        <View style={styles.card} key={index}>
-          <View style={styles.imageWrapper}>
-            <Image source={item.imageSource} style={styles.cardImage} />
-          </View>
+    <View
+      style={[
+        styles.card,
+        variant === 'challenge' && styles.cardChallenge,
+        currentChallenge && { shadowColor: currentChallenge.shadowColor },
+      ]}
+    >
+      <View style={styles.imageWrapper}>
+        <Image source={item.imageSource} style={styles.cardImage} />
+      </View>
 
-          <Text style={styles.cardMenu}>⋯</Text>
+      {variant !== 'challenge' && <Text style={styles.cardMenu}>⋯</Text>}
 
-          <View style={styles.cardContent}>
-            <Text style={styles.cardTitle}>{item.title}</Text>
-            <Text style={styles.cardText}>{item.mealTime}</Text>
-            <Text style={styles.cardText}>당: {item.sugar}</Text>
-            <Text style={styles.cardText}>단백질: {item.protein}</Text>
-          </View>
+      <View style={styles.cardContent}>
+        <Text style={styles.cardTitle}>{item.title}</Text>
 
-          <View style={[styles.cardTag, { backgroundColor: statusColors[item.tag] || '#DDD' }]}>
+        {showChallengeReplacement ? (
+          <>
+            <Text style={styles.challengeInfoLine1}>• 주 5회 이상</Text>
+            <Text style={styles.challengeInfoLine2}>
+              • 카페인 줄이기 및 건강관리
+            </Text>
+          </>
+        ) : (
+          <>
+            {hasMealTime && <Text style={styles.cardText}>{item.mealTime}</Text>}
+            {hasNutrients &&
+              item.topNutrients!.map((nutrient, idx) => (
+                <Text key={idx} style={styles.cardText}>
+                  {nutrient.name}: {nutrient.value}
+                </Text>
+              ))}
+          </>
+        )}
+      </View>
+
+      {variant === 'challenge' ? (
+        <Text
+          style={[
+            styles.challengeTagText,
+            currentChallenge && { color: currentChallenge.labelColor },
+          ]}
+        >
+          {currentChallenge?.label}
+        </Text>
+      ) : (
+        item.tag && (
+          <View
+            style={[
+              styles.cardTag,
+              { backgroundColor: statusColors[item.tag] || '#DDD' },
+            ]}
+          >
             <Text style={styles.cardTagText}>{item.tag}</Text>
           </View>
-        </View>
-      ))}
-    </>
+        )
+      )}
+    </View>
   );
 };
 
@@ -82,6 +152,13 @@ const styles = StyleSheet.create({
     elevation: 2,
     height: 137,
     position: 'relative',
+  },
+  cardChallenge: {
+    backgroundColor: '#FFF',
+    elevation: 2,
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.3,
+    shadowRadius: 3,
   },
   imageWrapper: {
     justifyContent: 'center',
@@ -115,6 +192,24 @@ const styles = StyleSheet.create({
     marginTop: 2,
     fontSize: 12,
   },
+  challengeInfoLine1: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  challengeInfoLine2: {
+    marginTop: 2,
+    fontSize: 12,
+    fontWeight: '500',
+  },
+  challengeTagText: {
+    textAlign: 'right',
+    fontSize: 12,
+    fontWeight: '600',
+    position: 'absolute',
+    bottom: 14,
+    right: 17,
+  },
   cardTag: {
     position: 'absolute',
     bottom: 14,
@@ -128,6 +223,14 @@ const styles = StyleSheet.create({
     color: '#FFF',
     textAlign: 'center',
     lineHeight: 19,
+  },
+  emptyContainer: {
+    marginTop: 30,
+    alignItems: 'center',
+  },
+  emptyText: {
+    fontSize: 14,
+    color: '#999',
   },
 });
 

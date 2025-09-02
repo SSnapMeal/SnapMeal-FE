@@ -1,5 +1,5 @@
-import React, { useState } from 'react';
-import { StyleSheet, Text, SafeAreaView, TouchableOpacity, ScrollView, Image, StatusBar, Platform, PermissionsAndroid, } from 'react-native';
+import React, { useState, useEffect } from 'react';
+import { StyleSheet, Text, SafeAreaView, TouchableOpacity, ScrollView, Image, StatusBar, Platform, PermissionsAndroid } from 'react-native';
 import { launchCamera, launchImageLibrary } from 'react-native-image-picker';
 import dayjs from 'dayjs';
 import isoWeek from 'dayjs/plugin/isoWeek';
@@ -18,12 +18,17 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 type NavigationProp = NativeStackNavigationProp<RootStackParamList, 'Home'>;
 type StatusType = '과다' | '적정' | '부족';
+
+type Nutrient = {
+  name: string;
+  value: string;
+};
+
 type CardData = {
   imageSource: any;
   title: string;
   mealTime: string;
-  sugar: string;
-  protein: string;
+  topNutrients: Nutrient[];
   tag: StatusType;
 };
 
@@ -34,23 +39,16 @@ const AnalysisScreen = () => {
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [cameraMenuVisible, setCameraMenuVisible] = useState(false);
-  const recommendedKcal = 2000; // 권장 칼로리
-  const consumedKcal = 1500;     // 현재까지 섭취한 칼로리
+  const [serverMeal, setServerMeal] = useState<CardData | undefined>(undefined);
+  const recommendedKcal = 2000;
+  const consumedKcal = 1500;
   const fillPercent = Math.min((consumedKcal / recommendedKcal) * 100, 100);
+  const [serverMeals, setServerMeals] = useState<CardData[]>([]);
 
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Analysis'>>();
 
-  const receivedMeal: CardData | undefined = route.params
-    ? {
-      imageSource: route.params.imageSource,
-      title: route.params.title,
-      mealTime: route.params.mealTime,
-      sugar: route.params.sugar,
-      protein: route.params.protein,
-      tag: route.params.tag as StatusType,
-    }
-    : undefined;
+  const receivedMeal = route.params;
 
   const statusColors: Record<StatusType, string> = {
     과다: '#F3B8B8',
@@ -70,6 +68,58 @@ const AnalysisScreen = () => {
       marked[date] = statusColors[status];
     });
   });
+
+  const finalMeal: CardData | undefined = serverMeal
+    ?? (receivedMeal && {
+      imageSource: receivedMeal.imageSource,
+      title: receivedMeal.title,
+      mealTime: receivedMeal.mealTime,
+      topNutrients: receivedMeal.topNutrients,
+      tag: receivedMeal.tag,
+    });
+
+
+  // 🔥 서버에서 식단 가져오는 부분 추가
+  useEffect(() => {
+    const fetchMeal = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        const response = await axios.get('http://api.snapmeal.store/meals', {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        });
+
+        const results = response.data.result;
+        console.log('🍽 서버에서 받은 데이터:', results);
+
+        const mealTypeMap: Record<string, string> = {
+          'BREAKFAST': '아침',
+          'LUNCH': '점심',
+          'DINNER': '저녁',
+        };
+
+        const meals: CardData[] = results.map((item: any) => ({
+          imageSource: { uri: item.imageUrl },
+          title: item.title,
+          mealTime: mealTypeMap[item.mealType] || '',
+          topNutrients: [
+            { name: '단백질', value: `${item.protein}g` },
+            { name: '당', value: `${item.sugar}g` }
+          ],
+          tag: item.tag as StatusType,
+        }));
+
+        setServerMeals(meals);
+      } catch (error) {
+        console.error('❌ 식단 데이터 불러오기 실패:', error);
+      }
+    };
+
+    fetchMeal();
+  }, []);
+
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -96,73 +146,69 @@ const AnalysisScreen = () => {
   };
 
   const analyzeImage = async (imageUri: string) => {
-  try {
-    const token = await AsyncStorage.getItem('accessToken'); // ✅ 토큰 불러오기
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
 
-    // ✅ 1. 분석 요청
-    const predictFormData = new FormData();
-    predictFormData.append('file', {
-      uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as any);
+      const predictFormData = new FormData();
+      predictFormData.append('file', {
+        uri: imageUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
 
-    const predictRes = await axios.post(
-      'http://api.snapmeal.store/predict',
-      predictFormData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`, // ✅ 인증 추가
-        },
+      const predictRes = await axios.post(
+        'http://api.snapmeal.store/predict',
+        predictFormData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      console.log('✅ 분석 결과:', predictRes.data);
+
+      const detections = predictRes.data.detections || [];
+      const classNames = [...new Set(detections.map((d: any) => d.class_name))] as string[];
+
+      console.log('🎯 감지된 음식 목록:', classNames);
+
+      const uploadFormData = new FormData();
+      uploadFormData.append('file', {
+        uri: imageUri,
+        name: 'photo.jpg',
+        type: 'image/jpeg',
+      } as any);
+
+      const uploadRes = await axios.post(
+        'http://api.snapmeal.store/images/upload-predict',
+        uploadFormData,
+        {
+          headers: {
+            'Content-Type': 'multipart/form-data',
+            'Authorization': `Bearer ${token}`,
+          },
+        }
+      );
+
+      const imageId = uploadRes.data.image_id;
+      console.log('🆔 이미지 업로드 성공, imageId:', imageId);
+
+      navigation.navigate('ImageCheck', {
+        imageUri,
+        classNames,
+        imageId,
+      });
+
+    } catch (error: any) {
+      if (axios.isAxiosError(error)) {
+        console.error('❌ 분석 또는 업로드 실패:', error.response?.data || error.message);
+      } else {
+        console.error('❌ 알 수 없는 에러:', error);
       }
-    );
-
-    console.log('✅ 분석 결과:', predictRes.data);
-
-    const detections = predictRes.data.detections || [];
-    const classNames = [...new Set(detections.map((d: any) => d.class_name))] as string[];
-
-    console.log('🎯 감지된 음식 목록:', classNames);
-
-    // ✅ 2. 이미지 업로드 요청
-    const uploadFormData = new FormData();
-    uploadFormData.append('file', {
-      uri: imageUri,
-      name: 'photo.jpg',
-      type: 'image/jpeg',
-    } as any);
-
-    const uploadRes = await axios.post(
-      'http://api.snapmeal.store/images/upload-predict',
-      uploadFormData,
-      {
-        headers: {
-          'Content-Type': 'multipart/form-data',
-          'Authorization': `Bearer ${token}`, // ✅ 인증 추가
-        },
-      }
-    );
-
-    const imageId = uploadRes.data.image_id;
-    console.log('🆔 이미지 업로드 성공, imageId:', imageId);
-
-    // ✅ 다음 화면으로 이동
-    navigation.navigate('ImageCheck', {
-      imageUri,
-      classNames,
-      imageId,
-    });
-
-  } catch (error: any) {
-    if (axios.isAxiosError(error)) {
-      console.error('❌ 분석 또는 업로드 실패:', error.response?.data || error.message);
-    } else {
-      console.error('❌ 알 수 없는 에러:', error);
     }
-  }
-};
-
+  };
 
   const openGallery = () => {
     launchImageLibrary(imageOptions, async (response) => {
@@ -191,7 +237,6 @@ const AnalysisScreen = () => {
     });
   };
 
-
   return (
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
@@ -217,11 +262,12 @@ const AnalysisScreen = () => {
 
           {selectedTabIndex === 0 ? (
             <>
-              <CalorieProgress
-                consumedKcal={consumedKcal}
-                recommendedKcal={recommendedKcal}
-              />
-              <DietCard additionalMeal={receivedMeal} />
+              <CalorieProgress consumedKcal={consumedKcal} recommendedKcal={recommendedKcal} />
+
+              {serverMeals.map((meal, index) => (
+                <DietCard key={index} additionalMeal={meal} />
+              ))}
+
             </>
           ) : (
             <RecommendCard />
