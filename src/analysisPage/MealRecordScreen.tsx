@@ -1,15 +1,13 @@
-import React from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import { View, Image, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { ScrollView } from 'react-native-gesture-handler';
 import { RootStackParamList, NutrientItem } from '../types/navigation';
 import Header from '../components/Header';
 import LinearGradient from 'react-native-linear-gradient';
 import CustomInput from '../components/CustomInput';
 import CustomNumInput from '../components/CustomNumInput';
 import NutrientList from '../components/NutrientList';
-import { launchCamera } from 'react-native-image-picker';
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type MealRecordRouteProp = RouteProp<RootStackParamList, 'MealRecord'>;
@@ -23,15 +21,21 @@ const MealRecordScreen = () => {
     rawNutrients,
     selectedMenu = '',
     selectedKcal = 0,
+    nutritionId,
   } = route.params ?? {
     imageUri: '',
     rawNutrients: [],
     selectedMenu: '',
     selectedKcal: 0,
+    nutritionId: 0,
   };
 
+  // ✅ 메뉴를 상태로 관리하도록 추가 (이거 때문에 화면 반영 안 됐던 것)
+  const [menuText, setMenuText] = useState(selectedMenu);
+  const [kcalText, setKcalText] = useState(selectedKcal.toString());
+
   const handleSave = () => {
-    // 저장 처리
+    // 이후 저장 버튼 만들면 여기에 저장 로직 추가 가능
   };
 
   return (
@@ -39,7 +43,14 @@ const MealRecordScreen = () => {
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <TouchableOpacity
         style={styles.nextButton}
-        onPress={() => navigation.navigate('MealDetail', {imageUri,})}
+        onPress={() => navigation.navigate('MealDetail', {
+          imageUri,
+          rawNutrients,
+          selectedMenu: menuText,
+          selectedKcal: Number(kcalText),
+          nutritionId,
+        })}
+
       >
         <Text style={styles.nextBtn}>다음 {'>>'}</Text>
       </TouchableOpacity>
@@ -60,7 +71,13 @@ const MealRecordScreen = () => {
             <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
               <TouchableOpacity
                 style={styles.search}
-                onPress={() => navigation.navigate('FoodSearch', { imageUri, rawNutrients })}
+                onPress={() => navigation.navigate('FoodSearch', {
+                  imageUri,
+                  rawNutrients,
+                  selectedMenu: menuText,
+                  selectedKcal: Number(kcalText),
+                  nutritionId,
+                })}
               >
                 <LinearGradient
                   colors={['#DAF1CF', '#ABE88F']}
@@ -77,9 +94,10 @@ const MealRecordScreen = () => {
               <CustomInput
                 label="메뉴"
                 placeholder="샐러드"
-                defaultValue={selectedMenu}
+                value={menuText}
+                onChangeText={setMenuText}
                 labelColor="#000"
-                helperText="* 안내메시지"
+                // helperText="* 안내메시지"
                 helperColor="red"
                 textColor="#000"
                 borderColor="#000"
@@ -87,9 +105,10 @@ const MealRecordScreen = () => {
               <CustomNumInput
                 label="칼로리"
                 placeholder="152"
-                defaultValue={selectedKcal.toString()}
+                value={kcalText}
+                onChangeText={setKcalText}
                 labelColor="#000"
-                helperText="* 안내메시지"
+                // helperText="* 안내메시지"
                 helperColor="red"
                 textColor="#000"
                 borderColor="#000"

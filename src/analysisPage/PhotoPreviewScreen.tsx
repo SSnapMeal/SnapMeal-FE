@@ -1,14 +1,6 @@
 import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View,
-  Text,
-  StyleSheet,
-  ScrollView,
-  TouchableOpacity,
-  Image,
-  Dimensions,
-  StatusBar,
-  Alert,
+  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, StatusBar, Alert,
 } from 'react-native';
 import { PieChart } from 'react-native-svg-charts';
 import Header from '../components/Header';
@@ -22,21 +14,21 @@ import SaveNoticeBox from '../components/SaveNoticeBox';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
-type PhotoPreviewRouteProp = RouteProp<RootStackParamList, 'PhotoPreview'>;
-
-const screenWidth = Dimensions.get('window').width;
-
 type Params = {
   imageUri: string;
   classNames: string[] | string;
   imageId: number;
+  nutritionId: number;
 };
+
+const screenWidth = Dimensions.get('window').width;
 
 const PhotoPreviewScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const route = useRoute<RouteProp<{ params: Params }, 'params'>>();
-  const { imageUri, classNames } = route.params;
+  const { imageUri, classNames, nutritionId: receivedNutritionId } = route.params;
   const imageId = Array.isArray(route.params.imageId) ? route.params.imageId[0] : route.params.imageId;
+
   const [nutrients, setNutrients] = useState({
     calories: 0,
     protein: 0,
@@ -44,6 +36,18 @@ const PhotoPreviewScreen = () => {
     sugar: 0,
     fat: 0,
   });
+
+  const [nutritionId, setNutritionId] = useState<number>(receivedNutritionId);
+
+  const foodNames =
+    typeof classNames === 'string'
+      ? classNames.split(',')
+      : Array.isArray(classNames)
+        ? classNames
+        : [];
+
+  const menuText = foodNames.join(', ');
+
   const foodTags =
     typeof classNames === 'string'
       ? `#${classNames}`
@@ -53,9 +57,8 @@ const PhotoPreviewScreen = () => {
 
   const rawNutrients = useMemo(() => {
     const totalKnown = nutrients.protein + nutrients.carbs + nutrients.sugar + nutrients.fat;
-    const targetTotal = 100; // or set your expected total grams if known
-    const etc = Math.max(0, targetTotal - totalKnown); // 음수가 안 나오게 보정
-
+    const targetTotal = 100;
+    const etc = Math.max(0, targetTotal - totalKnown);
     return [
       { key: 1, grams: nutrients.protein, color: '#CDE8BF', label: '단백질' },
       { key: 2, grams: nutrients.carbs, color: '#FFD794', label: '탄수화물' },
@@ -65,17 +68,14 @@ const PhotoPreviewScreen = () => {
     ];
   }, [nutrients]);
 
-
   const totalGrams = rawNutrients.reduce((sum, item) => sum + item.grams, 0);
-
   const data = rawNutrients.map(item => ({
     key: item.key,
     label: item.label,
     color: item.color,
     grams: item.grams,
-    value: parseFloat(((item.grams / totalGrams) * 100).toFixed(1)), // 기타 계산을 전체를 100g으로 잡아서 하고 있음음...
+    value: parseFloat(((item.grams / totalGrams) * 100).toFixed(1)),
   }));
-
 
   const pieData = data.map(item => ({
     value: item.value,
@@ -114,32 +114,13 @@ const PhotoPreviewScreen = () => {
     const fetchNutritionData = async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
-
-        // ✅ 타입 안전하게 처리
-        const foodNames =
-          typeof classNames === 'string'
-            ? classNames.split(',')
-            : Array.isArray(classNames)
-              ? classNames
-              : [];
-
-        console.log('🧪 foodNames:', foodNames, 'type:', typeof foodNames);
-        console.log('🧪 imageId:', imageId, 'type:', typeof imageId);
-
-
         if (!foodNames.length || typeof imageId !== 'number') {
           Alert.alert('이미지를 먼저 업로드하거나, 감지된 음식이 없습니다.');
           return;
         }
-
-        console.log('✅ 보낼 값:', { foodNames, imageId });
-
         const response = await axios.post(
           'http://api.snapmeal.store/nutritions/analyze',
-          {
-            foodNames,
-            imageId,
-          },
+          { foodNames, imageId },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -147,23 +128,24 @@ const PhotoPreviewScreen = () => {
             },
           }
         );
-
-        console.log('🍱 영양소 분석 결과:', response.data);
         setNutrients(response.data);
-
+        setNutritionId(response.data.nutritionId);
       } catch (error) {
-        if (axios.isAxiosError(error)) {
-          console.error('❌ 영양 분석 실패:', error.response?.data || error.message);
-        } else {
-          console.error('❌ 알 수 없는 에러 발생:', error);
-        }
-
+        console.error('❌ 영양 분석 실패:', error);
       }
     };
-
     fetchNutritionData();
   }, [imageId, classNames]);
 
+  const handleSave = () => {
+    navigation.navigate('MealRecord', {
+      imageUri,
+      rawNutrients,
+      selectedMenu: menuText,
+      selectedKcal: nutrients.calories,
+      nutritionId: nutritionId,
+    });
+  };
 
   const [activeIndex, setActiveIndex] = useState(0);
   const scrollRef = useRef<ScrollView>(null);
@@ -175,17 +157,11 @@ const PhotoPreviewScreen = () => {
     setActiveIndex(index);
   };
 
-  const handleSave = () => {
-    navigation.navigate('MealRecord', { imageUri, rawNutrients });
-  };
-
   return (
     <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
-      {/* ✅ 고정된 상단 영역 */}
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <Header title="분석 결과" backgroundColor="#FAFAFA" />
 
-      {/* ✅ 스크롤 가능한 본문 */}
       <ScrollView contentContainerStyle={styles.scrollContainer}>
         <Text style={styles.title}>
           {foodTags}
@@ -207,18 +183,10 @@ const PhotoPreviewScreen = () => {
             scrollEventThrottle={16}
             ref={scrollRef}
           >
-            {/* Slide 1 */}
             <View style={{ width: cardWidth, alignItems: 'center', justifyContent: 'center' }}>
-              <PieChart
-                style={styles.chart}
-                data={pieData}
-                outerRadius={'95%'}
-                innerRadius={'54%'}
-                padAngle={0}
-              />
+              <PieChart style={styles.chart} data={pieData} outerRadius={'95%'} innerRadius={'54%'} padAngle={0} />
             </View>
 
-            {/* Slide 2 */}
             <View style={{ width: cardWidth }}>
               <NutrientBarChart data={data} customStyle={{ width: '80%', marginTop: 40 }} />
             </View>
@@ -238,9 +206,7 @@ const PhotoPreviewScreen = () => {
 
         <View style={styles.summaryCard}>
           <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
-          <Text style={styles.summaryKcal}>
-            {nutrients.calories}/2000kcal
-          </Text>
+          <Text style={styles.summaryKcal}>{nutrients.calories}/2000kcal</Text>
         </View>
 
         <View style={styles.grid}>

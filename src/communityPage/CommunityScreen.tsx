@@ -1,7 +1,6 @@
 import React, { useState } from 'react';
 import {
   View,
-  TextInput,
   Image,
   StyleSheet,
   TouchableOpacity,
@@ -9,13 +8,13 @@ import {
 } from 'react-native';
 import { ScrollView, Text } from 'react-native-gesture-handler';
 import Navigation from '../components/Navigation';
-import TabSelector from '../components/TabSelecter';
-import PostCard from '../components/PostCard';
-import LinearGradient from 'react-native-linear-gradient';
+import DietCard from '../components/DietCard';
+import { useNavigation } from '@react-navigation/native';
 
 const CommunityScreen = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const tabLabels = ['친구 커뮤니티', '챌린지'];
+  const navigation = useNavigation<any>();
 
   return (
     <>
@@ -24,24 +23,16 @@ const CommunityScreen = () => {
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           {/* 상단 검색바 영역 */}
           <View style={styles.header}>
-            <View style={styles.searchContainer}>
-              <TextInput
-                style={styles.searchInput}
-                placeholder="run! 챌린지 진행 중"
-                placeholderTextColor="#B3B3B3"
-              />
-              <Image
-                source={require('../assets/images/search-icon.png')}
-                style={styles.searchIcon}
-              />
-            </View>
-
             <TouchableOpacity>
               <Image
                 source={require('../assets/images/profile.png')}
                 style={styles.profileImage}
               />
             </TouchableOpacity>
+            <View style={styles.searchContainer}>
+              <Text style={styles.nick}>스냅</Text>
+            </View>
+            <Text style={styles.top}>상위 11% (챌린지 7개 성공)</Text>
           </View>
 
           {/* 콘텐츠 영역 */}
@@ -51,106 +42,110 @@ const CommunityScreen = () => {
               style={styles.banner}
             />
 
-            {/* 탭 선택 */}
-            <TabSelector
-              labels={tabLabels}
-              selectedIndex={selectedTabIndex}
-              onSelectIndex={setSelectedTabIndex}
-            />
-
             {/* 탭에 따른 콘텐츠 출력 */}
             {selectedTabIndex === 0 ? (
               <View style={styles.tabContent}>
-                {/* 카테고리 제목 */}
-                <Text style={styles.categoryTitle}>카테고리</Text>
+                {/* 챌린지 제목 */}
+                <Text style={styles.categoryTitle}>챌린지</Text>
 
-                {/* 카테고리 아이콘 목록 */}
+                {/* 챌린지 아이콘 목록 */}
                 <View style={styles.iconRow}>
-                  <View style={styles.iconItem}>
+                  <TouchableOpacity
+                    style={styles.iconItem}
+                    onPress={() => navigation.navigate('ChallengeExplorer')} // ✅ 이동
+                    activeOpacity={0.8}
+                  >
                     <View style={styles.iconCircle}>
-                      <Image source={require('../assets/images/heart.png')} style={styles.iconImageHeart} />
+                      <Image
+                        source={require('../assets/images/search.png')}
+                        style={styles.iconImageSearch}
+                      />
                     </View>
-                    <Text style={styles.iconLabel}>친구 활동</Text>
-                  </View>
-                  <View style={styles.iconItem}>
+                    <Text style={styles.iconLabel}>전체</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.iconItem}
+                    onPress={() => navigation.navigate('ChallengeActive')}
+                    activeOpacity={0.8}
+                  >
                     <View style={styles.iconCircle}>
-                      <Image source={require('../assets/images/search.png')} style={styles.iconImageSearch} />
+                      <Image
+                        source={require('../assets/images/fire.png')}
+                        style={styles.iconImageList}
+                      />
                     </View>
-                    <Text style={styles.iconLabel}>친구 검색</Text>
-                  </View>
-                  <View style={styles.iconItem}>
+                    <Text style={styles.iconLabel}>참여 중</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    style={styles.iconItem}
+                    onPress={() => navigation.navigate('ChallengeDone')}
+                    activeOpacity={0.8}
+                  >
                     <View style={styles.iconCircle}>
-                      <Image source={require('../assets/images/list.png')} style={styles.iconImageList} />
+                      <Image
+                        source={require('../assets/images/note.png')}
+                        style={styles.iconImageMessage}
+                      />
                     </View>
-                    <Text style={styles.iconLabel}>친구 목록</Text>
-                  </View>
-                  <View style={styles.iconItem}>
-                    <View style={styles.iconCircle}>
-                      <Image source={require('../assets/images/message.png')} style={styles.iconImageMessage} />
-                    </View>
-                    <Text style={styles.iconLabel}>메시지</Text>
-                  </View>
+                    <Text style={styles.iconLabel}>완료</Text>
+                  </TouchableOpacity>
                 </View>
 
-                {/* 게시물 작성 버튼 */}
-                <TouchableOpacity style={styles.writeButtonWrapper}>
-                  <LinearGradient
-                    colors={['#DAF1CF', '#ABE88F']}
-                    start={{ x: 0, y: 0 }}
-                    end={{ x: 1, y: 0 }}
-                    style={styles.writeButton}
-                  >
-                    <View style={styles.writeIconContainer}>
-                      <Image source={require('../assets/images/pencil.png')} style={styles.writeIcon} />
-                    </View>
-                    <Text style={styles.writeText}>&gt;&gt; 게시물 작성하기</Text>
-                  </LinearGradient>
-                </TouchableOpacity>
-
                 {/* 카테고리 제목 */}
-                <Text style={styles.categoryTitle}>🔥 HOT 게시물 🔥</Text>
+                <Text style={styles.categoryTitle}>참여 중인 챌린지</Text>
 
-                {/* 게시물 */}
-                <PostCard
-                  username="몽실"
-                  date="04.02"
-                  hashtags={['샐러드']}
-                  kcal={152}
-                  content={`요즘은 다이어트 한다고\n채소만 먹는 중 (>o<)\n다들 건강식 먹자!`}
-                  image={require('../assets/images/salad.png')} // 이미지 경로에 따라 조정
-                  likes={42}
-                  comments={56}
-                />
-                <PostCard
-                  username="몽실"
-                  date="04.02"
-                  hashtags={['샐러드']}
-                  kcal={152}
-                  content={`요즘은 다이어트 한다고\n채소만 먹는 중 (>o<)\n다들 건강식 먹자!`}
-                  image={require('../assets/images/salad.png')} // 이미지 경로에 따라 조정
-                  likes={42}
-                  comments={56}
-                />
+                {/* 챌린지 */}
+                <View style={{ marginHorizontal: -16 }}>
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('ChallengeDetail')} // ✅ 이동
+                  >
+                    <DietCard
+                      variant="challenge"
+                      challengeState="참여중"   // ✅ 참여중
+                      additionalMeal={{
+                        imageSource: require('../assets/images/coffee.png'),
+                        title: '커피 마시지 않기',
+                      }}
+                    />
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    activeOpacity={0.8}
+                    onPress={() => navigation.navigate('ChallengeDetail')} // ✅ 이동
+                  >
+                    <DietCard
+                      variant="challenge"
+                      challengeState="참여중"   // ✅ 참여중
+                      additionalMeal={{
+                        imageSource: require('../assets/images/coffee.png'),
+                        title: '야식 줄이기',
+                      }}
+                    />
+                  </TouchableOpacity>
+                </View>
+
               </View>
             ) : (
               <View style={styles.tabContent}>
                 <View style={styles.emptyState}>
                   <Image
-                    source={require('../assets/images/snap.png')} // 스냅 이미지 경로에 맞게 조정
+                    source={require('../assets/images/snap.png')}
                     style={styles.snapImage}
                     resizeMode="contain"
                   />
-                  <Text style={styles.emptyText}>아직 준비 중이에요.{"\n"}
-                    더 좋은 모습으로 곧 만날게요! 조금만 기다려 주세요 💚</Text>
+                  <Text style={styles.emptyText}>
+                    아직 준비 중이에요.{'\n'}더 좋은 모습으로 곧 만날게요! 조금만 기다려 주세요 💚
+                  </Text>
                 </View>
               </View>
-
             )}
-
           </View>
-        </ScrollView>
+        </ScrollView >
         <Navigation />
-      </View>
+      </View >
     </>
   );
 };
@@ -180,6 +175,13 @@ const styles = StyleSheet.create({
     height: 40,
     marginRight: 10,
     backgroundColor: '#fff',
+  },
+  nick: {
+    fontSize: 16,
+  },
+  top: {
+    fontSize: 16,
+    fontWeight: 700,
   },
   searchInput: {
     flex: 1,
@@ -219,7 +221,7 @@ const styles = StyleSheet.create({
   },
   iconRow: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
+    gap: 22,
     marginBottom: 36,
   },
   iconItem: {

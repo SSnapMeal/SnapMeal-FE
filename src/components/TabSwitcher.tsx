@@ -1,16 +1,17 @@
 import React from 'react';
 import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
 
-type TabOption = '주간' | '월간';
-
-interface TabSwitcherProps {
-  selectedTab: TabOption;
-  onSelectTab: (tab: TabOption) => void;
+interface TabSwitcherProps<T extends string> {
+  tabs?: T[];
+  selectedTab: T;
+  onSelectTab: (tab: T) => void;
 }
 
-const TabSwitcher: React.FC<TabSwitcherProps> = ({ selectedTab, onSelectTab }) => {
-  const tabs: TabOption[] = ['주간', '월간'];
-
+const TabSwitcher = <T extends string>({
+  tabs = ['주간', '월간'] as unknown as T[],
+  selectedTab,
+  onSelectTab,
+}: TabSwitcherProps<T>) => {
   return (
     <View style={styles.tabButtons}>
       {tabs.map((tab) => (
@@ -22,7 +23,7 @@ const TabSwitcher: React.FC<TabSwitcherProps> = ({ selectedTab, onSelectTab }) =
           ]}
           onPress={() => onSelectTab(tab)}
         >
-          <Text style={[styles.tabButtonText]}>{tab}</Text>
+          <Text style={styles.tabButtonText}>{tab}</Text>
         </TouchableOpacity>
       ))}
     </View>

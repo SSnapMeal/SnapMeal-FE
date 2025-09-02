@@ -21,6 +21,10 @@ import MealDetailScreen from './analysisPage/MealDetailScreen';
 
 import MyPageScreen from './myPage/MyPageScreen';
 import CommunityScreen from './communityPage/CommunityScreen';
+import ChallengeExplorerScreen from './communityPage/ChallengeExplorerScreen';
+import ChallengeDetailScreen from './communityPage/ChallengeDetailScreen';
+import ChallengeActiveScreen from './communityPage/ChallengeActiveScreen';
+import ChallengeDoneScreen from './communityPage/ChallengeDoneScreen';
 
 import ProfileEditScreen from './myPage/ProfileEditScreen';
 import EditGoalScreen from './myPage/EditGoalScreen';
@@ -51,6 +55,10 @@ const App = () => {
             <Stack.Screen name="MealDetail" component={MealDetailScreen} />
             <Stack.Screen name="MyPage" component={MyPageScreen} />
             <Stack.Screen name="Community" component={CommunityScreen} />
+            <Stack.Screen name="ChallengeExplorer" component={ChallengeExplorerScreen} />
+            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen name="ChallengeActive" component={ChallengeActiveScreen} />
+            <Stack.Screen name="ChallengeDone" component={ChallengeDoneScreen} />
             <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
             <Stack.Screen name="EditGoal" component={EditGoalScreen} />
             <Stack.Screen name="EditIdNick" component={EditIdNickScreen} />
