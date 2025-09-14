@@ -1,19 +1,26 @@
 import React from 'react';
 import { View, Text, Image, StyleSheet } from 'react-native';
 
-const DinnerCard = () => {
+type DinnerCardProps = {
+  title?: string; // 상단 제목
+  note?: string;  // 설명 텍스트
+};
+
+const DinnerCard = ({ title, note }: DinnerCardProps) => {
   return (
     <View style={styles.card}>
-      <Text style={styles.title}>주로 저녁에 칼로리가 높은 음식을 먹었어요</Text>
+      {/* title이 있으면 표시 */}
+      {title ? <Text style={styles.title}>{title}</Text> : null}
+
       <View style={styles.container}>
         <Image
           source={require('../assets/images/dinner-time.png')}
           style={styles.image}
         />
         <View style={styles.textWrapper}>
+          {/* note가 있으면 표시, 없으면 안내 메시지 */}
           <Text style={styles.note}>
-            전체의 40%의 칼로리를 저녁에 섭취하였고,{'\n'}
-            탄수화물은 30g을 저녁마다 먹었어요
+            {note || '저녁 식사 데이터가 아직 없습니다.'}
           </Text>
         </View>
       </View>
@@ -35,7 +42,7 @@ const styles = StyleSheet.create({
   container: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginRight: 30,
+    marginRight: 10,
   },
   image: {
     width: 100,
