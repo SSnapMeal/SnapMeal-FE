@@ -10,30 +10,40 @@ interface NutrientItem {
 
 interface NutrientSummaryProps {
   data: NutrientItem[];
+  nutritionSummary?: string; // ✅ 서버에서 내려온 분석 문구
 }
 
-const NutrientSummary: React.FC<NutrientSummaryProps> = ({ data }) => {
+const NutrientSummary: React.FC<NutrientSummaryProps> = ({ data, nutritionSummary }) => {
   const maxValue = Math.max(...data.map(item => item.value));
 
   return (
     <View style={styles.card}>
       <Text style={styles.title}>평균적으로 다음과 같이 섭취했어요</Text>
+      
       {data.map((item, idx) => {
-        const percentage = (item.value / maxValue) * 100;
+        const percentage = maxValue === 0 ? 0 : (item.value / maxValue) * 100;
         return (
           <View key={idx} style={styles.row}>
             <Text style={styles.label}>{item.label}</Text>
             <View style={styles.barWrapper}>
-              <View style={[styles.bar, { width: `${percentage}%`, backgroundColor: item.color }]} />
+              <View
+                style={[
+                  styles.bar,
+                  { width: `${percentage}%`, backgroundColor: item.color },
+                ]}
+              />
             </View>
-            <Text style={styles.value}>{item.value}{item.unit}</Text>
+            <Text style={styles.value}>
+              {item.value}{item.unit}
+            </Text>
           </View>
         );
       })}
-      <Text style={styles.note}>
-        전체적으로 적게 섭취하는 경향이 있어요{'\n'}
-        현재 탄수화물 섭취가 너무 낮고, 당 섭취가 높아요
-      </Text>
+
+      {/* ✅ nutritionSummary가 있으면 서버 내용 표시 */}
+      {!!nutritionSummary && (
+        <Text style={styles.note}>{nutritionSummary}</Text>
+      )}
     </View>
   );
 };
@@ -76,6 +86,8 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#717171',
     textAlign: 'center',
+    lineHeight: 18,
+    marginTop: 16,
   },
 });
 

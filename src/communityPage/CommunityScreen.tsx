@@ -174,7 +174,6 @@ const styles = StyleSheet.create({
     paddingHorizontal: 15,
     height: 40,
     marginRight: 10,
-    backgroundColor: '#fff',
   },
   nick: {
     fontSize: 16,

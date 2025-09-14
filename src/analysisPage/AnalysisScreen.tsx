@@ -30,24 +30,63 @@ type CardData = {
   mealTime: string;
   topNutrients: Nutrient[];
   tag: StatusType;
+  mealId: number;
 };
 
+
 dayjs.extend(isoWeek);
+
+const mealTypeMap: Record<string, string> = {
+  BREAKFAST: '아침',
+  LUNCH: '점심',
+  DINNER: '저녁',
+};
+
+// 상위 2개 영양소만 추출
+const pickTop2Nutrients = (item: any): Nutrient[] => {
+  const labelMap: Record<string, string> = {
+    protein: '단백질',
+    carbs: '탄수화물',
+    sugar: '당',
+    fat: '지방',
+  };
+
+  const pairs = ([
+    ['protein', item?.protein],
+    ['carbs', item?.carbs],
+    ['sugar', item?.sugar],
+    ['fat', item?.fat],
+  ] as [keyof typeof labelMap, number | undefined][])
+    .filter(([, v]) => typeof v === 'number' && !isNaN(v as number))
+    .sort((a, b) => (b[1]! - a[1]!))
+    .slice(0, 2)
+    .map(([key, v]) => ({ name: labelMap[key], value: `${v}g` }));
+
+  return pairs;
+};
 
 const AnalysisScreen = () => {
   const [selectedDate, setSelectedDate] = useState(dayjs());
   const [isCalendarExpanded, setIsCalendarExpanded] = useState(false);
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
   const [cameraMenuVisible, setCameraMenuVisible] = useState(false);
+
   const [serverMeal, setServerMeal] = useState<CardData | undefined>(undefined);
+  const [serverMeals, setServerMeals] = useState<CardData[]>([]);
+
   const recommendedKcal = 2000;
   const consumedKcal = 1500;
-  const fillPercent = Math.min((consumedKcal / recommendedKcal) * 100, 100);
-  const [serverMeals, setServerMeals] = useState<CardData[]>([]);
+
+  const [recommendData, setRecommendData] = useState({
+    consumedCalories: 0,
+    remainingCalories: 0,
+    exerciseSuggestion: '',
+    foodSuggestion: '',
+  });
+
 
   const navigation = useNavigation<NavigationProp>();
   const route = useRoute<RouteProp<RootStackParamList, 'Analysis'>>();
-
   const receivedMeal = route.params;
 
   const statusColors: Record<StatusType, string> = {
@@ -69,17 +108,18 @@ const AnalysisScreen = () => {
     });
   });
 
-  const finalMeal: CardData | undefined = serverMeal
-    ?? (receivedMeal && {
+  const finalMeal: CardData | undefined =
+    serverMeal ??
+    (receivedMeal && {
       imageSource: receivedMeal.imageSource,
       title: receivedMeal.title,
       mealTime: receivedMeal.mealTime,
       topNutrients: receivedMeal.topNutrients,
       tag: receivedMeal.tag,
+      mealId: Number((receivedMeal as any).mealId ?? -1), // ✅ 기본값(-1)
     });
 
-
-  // 🔥 서버에서 식단 가져오는 부분 추가
+  // 🔥 서버에서 식단 가져오는 부분 (className → title, topNutrients 상위 2개 적용)
   useEffect(() => {
     const fetchMeal = async () => {
       try {
@@ -91,25 +131,27 @@ const AnalysisScreen = () => {
           },
         });
 
-        const results = response.data.result;
-        console.log('🍽 서버에서 받은 데이터:', results);
+        const result = response.data?.result;
+        console.log('🍽 서버에서 받은 데이터:', result);
 
-        const mealTypeMap: Record<string, string> = {
-          'BREAKFAST': '아침',
-          'LUNCH': '점심',
-          'DINNER': '저녁',
-        };
+        const list = Array.isArray(result) ? result : result ? [result] : [];
 
-        const meals: CardData[] = results.map((item: any) => ({
-          imageSource: { uri: item.imageUrl },
-          title: item.title,
-          mealTime: mealTypeMap[item.mealType] || '',
-          topNutrients: [
-            { name: '단백질', value: `${item.protein}g` },
-            { name: '당', value: `${item.sugar}g` }
-          ],
-          tag: item.tag as StatusType,
-        }));
+        const meals: CardData[] = list
+          .map((item: any) => {
+            const id = Number(item.mealId ?? item.id);      // ✅ 서버 키에 맞게 매핑
+            if (!Number.isFinite(id)) return null;          // id 없으면 필터링
+            const top2 = pickTop2Nutrients(item);
+
+            return {
+              imageSource: item.imageUrl ? { uri: item.imageUrl } : require('../assets/images/food_sample.png'),
+              title: item.className ?? item.title ?? '식사',
+              mealTime: mealTypeMap[item.mealType] || '',
+              topNutrients: top2,
+              tag: '적정',
+              mealId: id,                                   // ✅ 필수
+            };
+          })
+          .filter(Boolean) as CardData[];
 
         setServerMeals(meals);
       } catch (error) {
@@ -120,6 +162,48 @@ const AnalysisScreen = () => {
     fetchMeal();
   }, []);
 
+  useEffect(() => {
+    const fetchRecommendation = async () => {
+      try {
+        // 🔹 AsyncStorage에서 accessToken 불러오기
+        const token = await AsyncStorage.getItem('accessToken');
+
+        if (!token) {
+          console.warn('⚠️ 토큰이 없습니다. 로그인 후 다시 시도해주세요.');
+          return;
+        }
+
+        // 🔹 API 요청
+        const response = await axios.get(
+          'http://api.snapmeal.store/recommendations/today',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`, // ⭐ 반드시 Bearer + 공백 + 토큰
+            },
+          }
+        );
+
+        const data = response.data;
+        console.log('🔥 추천 API 데이터:', data);
+
+        setRecommendData({
+          consumedCalories: data.consumedCalories ?? 0,
+          remainingCalories: data.remainingCalories ?? 0,
+          exerciseSuggestion: data.exerciseSuggestion ?? '',
+          foodSuggestion: data.foodSuggestion ?? '',
+        });
+      } catch (error) {
+        const err = error as any;
+        console.error(
+          '❌ 추천 데이터 불러오기 실패:',
+          err.response?.status,
+          err.response?.data
+        );
+      }
+    };
+
+    fetchRecommendation();
+  }, []);
 
   const requestCameraPermission = async () => {
     if (Platform.OS === 'android') {
@@ -162,7 +246,7 @@ const AnalysisScreen = () => {
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -187,7 +271,7 @@ const AnalysisScreen = () => {
         {
           headers: {
             'Content-Type': 'multipart/form-data',
-            'Authorization': `Bearer ${token}`,
+            Authorization: `Bearer ${token}`,
           },
         }
       );
@@ -200,7 +284,6 @@ const AnalysisScreen = () => {
         classNames,
         imageId,
       });
-
     } catch (error: any) {
       if (axios.isAxiosError(error)) {
         console.error('❌ 분석 또는 업로드 실패:', error.response?.data || error.message);
@@ -237,6 +320,8 @@ const AnalysisScreen = () => {
     });
   };
 
+  const fillPercent = Math.min((consumedKcal / recommendedKcal) * 100, 100);
+
   return (
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
@@ -265,12 +350,24 @@ const AnalysisScreen = () => {
               <CalorieProgress consumedKcal={consumedKcal} recommendedKcal={recommendedKcal} />
 
               {serverMeals.map((meal, index) => (
-                <DietCard key={index} additionalMeal={meal} />
+                <DietCard
+                  key={`${meal.mealId}-${index}`}        // 가능하면 mealId를 key로
+                  additionalMeal={meal}
+                  onDeleted={(deletedId) => {
+                    // ✅ DietCard에서 삭제 성공 후 호출됨 → 목록 갱신
+                    setServerMeals(prev => prev.filter(m => m.mealId !== deletedId));
+                  }}
+                />
               ))}
-
             </>
           ) : (
-            <RecommendCard />
+            <RecommendCard
+              consumedCalories={recommendData.consumedCalories}
+              remainingCalories={recommendData.remainingCalories}
+              exerciseSuggestion={recommendData.exerciseSuggestion}
+              foodSuggestion={recommendData.foodSuggestion}
+            />
+
           )}
         </ScrollView>
 

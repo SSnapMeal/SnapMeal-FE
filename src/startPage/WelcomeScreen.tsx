@@ -1,22 +1,27 @@
 import React, { useEffect, useState } from 'react';
-import { View, StyleSheet, Image, StatusBar, Dimensions, SafeAreaView, Text, Button } from 'react-native';
+import { 
+  View, 
+  StyleSheet, 
+  Image, 
+  StatusBar, 
+  Dimensions, 
+  SafeAreaView, 
+  Text, 
+  Alert, 
+  Linking 
+} from 'react-native';
 
-const { height } = Dimensions.get('window');
-
-import { useNavigation } from '@react-navigation/native';
 import { TouchableOpacity } from 'react-native';
-
 import CustomInput from '../components/CustomInput';
 
+import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 
-import { Linking } from 'react-native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-
-import { Alert } from 'react-native';
-
 import axios from 'axios';
+
+const { height } = Dimensions.get('window');
 
 type WelcomeScreenNavigationProp = NativeStackNavigationProp<RootStackParamList, 'Welcome'>;
 
@@ -27,63 +32,71 @@ const WelcomeScreen = () => {
   const [passwordError, setPasswordError] = useState('');
 
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
+
   const KAKAO_AUTH_URL = `https://accounts.kakao.com/login/?continue=https%3A%2F%2Fkauth.kakao.com%2Foauth%2Fauthorize%3Fresponse_type%3Dcode%26client_id%3D0fe99e36a3be9338e0997100509d18f8%26redirect_uri%3Dhttp%253A%252F%252Fapi.snapmeal.store%252Fusers%252Foauth%252Fkakao%252Fcallback%26through_account%3Dtrue#login`;
 
+  /** 
+   * 일반 로그인 
+   */
   const handleNormalLogin = async () => {
-  let isValid = true;
+    let isValid = true;
 
-  if (userId.trim() === '') {
-    setUserIdError('* 아이디를 입력해주세요');
-    isValid = false;
-  } else {
-    setUserIdError('');
-  }
+    // 유효성 검사
+    if (userId.trim() === '') {
+      setUserIdError('* 아이디를 입력해주세요');
+      isValid = false;
+    } else {
+      setUserIdError('');
+    }
 
-  if (password.trim() === '') {
-    setPasswordError('* 비밀번호를 입력해주세요');
-    isValid = false;
-  } else if (password.trim().length < 8) {
-    setPasswordError('* 비밀번호는 8자 이상이어야 합니다');
-    isValid = false;
-  } else {
-    setPasswordError('');
-  }
+    if (password.trim() === '') {
+      setPasswordError('* 비밀번호를 입력해주세요');
+      isValid = false;
+    } else if (password.trim().length < 8) {
+      setPasswordError('* 비밀번호는 8자 이상이어야 합니다');
+      isValid = false;
+    } else {
+      setPasswordError('');
+    }
 
-  if (!isValid) return;
+    if (!isValid) return;
 
-  try {
-    const response = await axios.post('http://api.snapmeal.store/users/sign-in', {
-      userId: userId.trim(),
-      password: password.trim(),
-    });
+    try {
+      // 로그인 API 요청
+      const response = await axios.post('http://api.snapmeal.store/users/sign-in', {
+        userId: userId.trim(),
+        password: password.trim(),
+      });
 
-    const { accessToken, refreshToken } = response.data.tokenServiceResponse;
-    const role = response.data.role;
+      // 토큰 추출
+      const { accessToken, refreshToken } = response.data.tokenServiceResponse;
+      const role = response.data.role;
 
-    // 콘솔 로그 추가
-    console.log('로그인 성공');
-    console.log('User ID:', userId);
-    console.log('Role:', role);
-    console.log('Access Token:', accessToken);
+      console.log('로그인 성공');
+      console.log('User ID:', userId);
+      console.log('Role:', role);
+      console.log('Access Token:', accessToken);
 
-    // 토큰 저장
-    await AsyncStorage.setItem('accessToken', accessToken);
-    await AsyncStorage.setItem('refreshToken', refreshToken);
+      // 토큰 저장
+      await AsyncStorage.setItem('accessToken', accessToken);
+      await AsyncStorage.setItem('refreshToken', refreshToken);
 
-    // 홈으로 이동
-    navigation.navigate('Home');
+      // 저장 확인 로그
+      const storedToken = await AsyncStorage.getItem('accessToken');
+      console.log('저장된 Access Token:', storedToken);
 
-  } catch (error) {
-    console.error(error);
-    Alert.alert('로그인 실패', '아이디 또는 비밀번호가 잘못되었습니다.');
-  }
-};
+      // 홈으로 이동
+      navigation.navigate('Home');
 
+    } catch (error) {
+      console.error(error);
+      Alert.alert('로그인 실패', '아이디 또는 비밀번호가 잘못되었습니다.');
+    }
+  };
 
   const handleKakaoLogin = () => {
     console.log('🟡 카카오 로그인 버튼 클릭됨!');
     Linking.openURL(KAKAO_AUTH_URL);
-    // Linking.openURL('snapmeal://home?accessToken=test123&refreshToken=test456');
   };
 
   useEffect(() => {
@@ -95,6 +108,7 @@ const WelcomeScreen = () => {
         const [schemeAndPath, queryString] = url.split('?');
         const path = schemeAndPath.split('://')[1] ?? '';
 
+        // URL 파라미터 파싱
         const params: Record<string, string> = {};
         if (queryString) {
           queryString.split('&').forEach(pair => {
@@ -105,11 +119,11 @@ const WelcomeScreen = () => {
           });
         }
 
-        const accessToken = params.token;
+        const accessToken = params.token; // ❗ 실제 서버에서 내려주는 키 확인 필요
 
         if (accessToken) {
           await AsyncStorage.setItem('accessToken', accessToken);
-          console.log('✅ 토큰 저장 완료');
+          console.log('✅ 카카오 토큰 저장 완료');
 
           if (path === 'profile-setup') {
             navigation.navigate('ProfileSetting', { userInfo: undefined });
@@ -127,7 +141,7 @@ const WelcomeScreen = () => {
     // 이벤트 리스너 등록
     const sub = Linking.addEventListener('url', handleUrl);
 
-    // 앱이 처음 열릴 때 URL 있는 경우 처리
+    // 앱 최초 실행 시 초기 URL 확인
     Linking.getInitialURL().then(url => {
       if (url) {
         handleUrl({ url });
@@ -143,19 +157,19 @@ const WelcomeScreen = () => {
       <SafeAreaView style={{ flex: 1 }}>
         <View style={styles.fullScreen}>
           <View style={styles.background} />
-          {/*이미지*/}
+
+          {/* 카메라 이미지 */}
           <Image
             source={require('../assets/images/camera.png')}
             style={styles.cameraImg}
             resizeMode="cover"
           />
 
-          {/*박스*/}
+          {/* 로그인 박스 */}
           <View style={styles.box}>
-            {/*앱네임*/}
             <Text style={styles.appName}>SnapMeal</Text>
 
-            {/*로그인*/}
+            {/* 아이디 입력 */}
             <CustomInput
               placeholder="아이디"
               value={userId}
@@ -166,6 +180,7 @@ const WelcomeScreen = () => {
               helperText={userIdError || ' '}
             />
 
+            {/* 비밀번호 입력 */}
             <CustomInput
               placeholder="비밀번호"
               value={password}
@@ -177,19 +192,19 @@ const WelcomeScreen = () => {
               secureTextEntry
             />
 
-            {/*아이디/비밀번호 찾기*/}
+            {/* 아이디/비밀번호 찾기 */}
             <TouchableOpacity onPress={() => navigation.navigate('FindAccount')}>
               <Text style={styles.findAccount}>아이디/비밀번호 찾기</Text>
             </TouchableOpacity>
 
-            {/*로그인 버튼*/}
+            {/* 버튼 영역 */}
             <View style={styles.buttonContainer}>
-              {/* 일반 로그인 */}
+              {/* 일반 로그인 버튼 */}
               <TouchableOpacity style={styles.button} onPress={handleNormalLogin} activeOpacity={0.6}>
                 <Text style={styles.loginButton}>로그인</Text>
               </TouchableOpacity>
 
-              {/* 카카오 로그인 */}
+              {/* 카카오 로그인 버튼 */}
               <TouchableOpacity style={styles.kakaoButton} onPress={handleKakaoLogin} activeOpacity={0.6}>
                 <Image
                   source={require('../assets/images/kakao.png')}
@@ -200,7 +215,7 @@ const WelcomeScreen = () => {
               </TouchableOpacity>
             </View>
 
-            {/*회원가입 하러가기*/}
+            {/* 회원가입 */}
             <View style={styles.signUpWrap}>
               <Text style={styles.signUp}>아직 계정이 없다면?</Text>
               <TouchableOpacity activeOpacity={0.6} onPress={() => navigation.navigate('SignUp')}>
