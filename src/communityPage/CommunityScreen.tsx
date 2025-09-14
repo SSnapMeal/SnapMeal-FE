@@ -182,6 +182,13 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: 700,
   },
+  nick: {
+    fontSize: 16,
+  },
+  top: {
+    fontSize: 16,
+    fontWeight: 700,
+  },
   searchInput: {
     flex: 1,
     fontSize: 14,
