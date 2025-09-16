@@ -1,27 +1,77 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   View,
   Image,
   StyleSheet,
   TouchableOpacity,
   StatusBar,
+  Text,
 } from 'react-native';
-import { ScrollView, Text } from 'react-native-gesture-handler';
+import { ScrollView } from 'react-native-gesture-handler';
 import Navigation from '../components/Navigation';
 import DietCard from '../components/DietCard';
 import { useNavigation } from '@react-navigation/native';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const CommunityScreen = () => {
   const [selectedTabIndex, setSelectedTabIndex] = useState(0);
-  const tabLabels = ['친구 커뮤니티', '챌린지'];
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
+
+  // status → 앱에서 사용할 상태값으로 변환
+  const mapStatusToState = (status: string) => {
+    switch (status) {
+      case 'PENDING':
+        return '참여전';
+      case 'IN_PROGRESS':
+        return '참여중';
+      case 'SUCCESS':
+        return '성공';
+      default:
+        return '참여전';
+    }
+  };
+
+  // 내 챌린지 데이터 가져오기
+  useEffect(() => {
+    const fetchMyChallenges = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) {
+          console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+          return;
+        }
+
+        const response = await axios.get(
+          'http://api.snapmeal.store/challenges/my',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        console.log('🔥 내 챌린지 데이터:', response.data);
+        setChallenges(response.data);
+      } catch (error) {
+        console.error('❌ 챌린지 데이터 불러오기 실패:', error);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMyChallenges();
+  }, []);
 
   return (
     <>
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <View style={styles.screenContainer}>
         <ScrollView contentContainerStyle={styles.scrollContainer}>
-          {/* 상단 검색바 영역 */}
+          {/* 상단 프로필 영역 */}
           <View style={styles.header}>
             <TouchableOpacity>
               <Image
@@ -42,17 +92,17 @@ const CommunityScreen = () => {
               style={styles.banner}
             />
 
-            {/* 탭에 따른 콘텐츠 출력 */}
+            {/* 첫 번째 탭: 친구 커뮤니티 */}
             {selectedTabIndex === 0 ? (
               <View style={styles.tabContent}>
-                {/* 챌린지 제목 */}
+                {/* 챌린지 카테고리 제목 */}
                 <Text style={styles.categoryTitle}>챌린지</Text>
 
                 {/* 챌린지 아이콘 목록 */}
                 <View style={styles.iconRow}>
                   <TouchableOpacity
                     style={styles.iconItem}
-                    onPress={() => navigation.navigate('ChallengeExplorer')} // ✅ 이동
+                    onPress={() => navigation.navigate('ChallengeExplorer')}
                     activeOpacity={0.8}
                   >
                     <View style={styles.iconCircle}>
@@ -93,40 +143,45 @@ const CommunityScreen = () => {
                   </TouchableOpacity>
                 </View>
 
-                {/* 카테고리 제목 */}
+                {/* 참여 중인 챌린지 목록 */}
                 <Text style={styles.categoryTitle}>참여 중인 챌린지</Text>
 
-                {/* 챌린지 */}
                 <View style={{ marginHorizontal: -16 }}>
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => navigation.navigate('ChallengeDetail')} // ✅ 이동
-                  >
-                    <DietCard
-                      variant="challenge"
-                      challengeState="참여중"   // ✅ 참여중
-                      additionalMeal={{
-                        imageSource: require('../assets/images/coffee.png'),
-                        title: '커피 마시지 않기',
-                      }}
-                    />
-                  </TouchableOpacity>
-
-                  <TouchableOpacity
-                    activeOpacity={0.8}
-                    onPress={() => navigation.navigate('ChallengeDetail')} // ✅ 이동
-                  >
-                    <DietCard
-                      variant="challenge"
-                      challengeState="참여중"   // ✅ 참여중
-                      additionalMeal={{
-                        imageSource: require('../assets/images/coffee.png'),
-                        title: '야식 줄이기',
-                      }}
-                    />
-                  </TouchableOpacity>
+                  {loading ? (
+                    <Text style={{ textAlign: 'center', marginTop: 20 }}>로딩중...</Text>
+                  ) : challenges.filter(c => c.status === 'IN_PROGRESS').length === 0 ? (
+                    <Text style={{ textAlign: 'center', marginTop: 20 }}>
+                      참여 중인 챌린지가 없습니다.
+                    </Text>
+                  ) : (
+                    challenges
+                      .filter(c => c.status === 'IN_PROGRESS')
+                      .map(challenge => (
+                        <TouchableOpacity
+                          key={challenge.challengeId}
+                          activeOpacity={0.8}
+                          onPress={() =>
+                            navigation.navigate('ChallengeDetail', {
+                              challengeId: challenge.challengeId,
+                              state: mapStatusToState(challenge.status),
+                            })
+                          }
+                        >
+                          <DietCard
+                            variant="challenge"
+                            challengeState={mapStatusToState(challenge.status)}
+                            additionalMeal={{
+                              imageSource: require('../assets/images/coffee.png'),
+                              title: challenge.title,
+                              targetMenuName: challenge.targetMenuName,
+                              description: challenge.description,
+                              mealId: challenge.challengeId,
+                            }}
+                          />
+                        </TouchableOpacity>
+                      ))
+                  )}
                 </View>
-
               </View>
             ) : (
               <View style={styles.tabContent}>
@@ -143,9 +198,9 @@ const CommunityScreen = () => {
               </View>
             )}
           </View>
-        </ScrollView >
+        </ScrollView>
         <Navigation />
-      </View >
+      </View>
     </>
   );
 };
@@ -154,7 +209,7 @@ const styles = StyleSheet.create({
   screenContainer: {
     flex: 1,
     backgroundColor: '#FAFAFA',
-    paddingBottom: 60
+    paddingBottom: 60,
   },
   scrollContainer: {
     paddingTop: 14,
@@ -180,23 +235,7 @@ const styles = StyleSheet.create({
   },
   top: {
     fontSize: 16,
-    fontWeight: 700,
-  },
-  nick: {
-    fontSize: 16,
-  },
-  top: {
-    fontSize: 16,
-    fontWeight: 700,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: 14,
-    color: '#000',
-  },
-  searchIcon: {
-    width: 24,
-    height: 24,
+    fontWeight: '700',
   },
   profileImage: {
     width: 40,
@@ -223,7 +262,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     color: '#121212',
     marginBottom: 15,
-    marginLeft: 10
+    marginLeft: 10,
   },
   iconRow: {
     flexDirection: 'row',
@@ -243,10 +282,6 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 8,
   },
-  iconImageHeart: {
-    width: 32,
-    height: 32,
-  },
   iconImageSearch: {
     width: 39,
     height: 39,
@@ -264,61 +299,23 @@ const styles = StyleSheet.create({
     color: '#000',
     textAlign: 'center',
   },
-  writeButtonWrapper: {
-    marginHorizontal: 15,
-    marginBottom: 81,
-    borderRadius: 16,
-    overflow: 'hidden',
-    elevation: 1,
-  },
-  writeButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    height: 62,
-    borderRadius: 16,
-    paddingRight: 20,
-  },
-  writeIconContainer: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: 'white',
-    alignItems: 'center',
-    justifyContent: 'center',
-    marginLeft: 18,
-    marginRight: 12
-  },
-  writeIcon: {
-    width: 20,
-    height: 20,
-  },
-
-  writeText: {
-    fontSize: 16,
-    fontWeight: 'bold',
-    color: '#121212',
-  },
   emptyState: {
     justifyContent: 'center',
     alignItems: 'center',
     marginTop: 30,
   },
-
   snapImage: {
     width: 150,
     height: 150,
     marginBottom: 20,
-    opacity: 0.4
+    opacity: 0.4,
   },
-
   emptyText: {
     fontSize: 14,
     color: '#888',
     fontWeight: '500',
-    textAlign: 'center'
+    textAlign: 'center',
   },
-
-
 });
 
 export default CommunityScreen;
