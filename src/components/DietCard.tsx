@@ -27,6 +27,8 @@ export type CardData = {
   topNutrients?: Nutrient[];
   tag?: StatusType;
   mealId: number;
+  targetMenuName?: string;
+  description?: string;
 };
 
 type DietCardProps = {
@@ -162,10 +164,8 @@ const DietCard: React.FC<DietCardProps> = ({
 
         {showChallengeReplacement ? (
           <>
-            <Text style={styles.challengeInfoLine1}>• 주 5회 이상</Text>
-            <Text style={styles.challengeInfoLine2}>
-              • 카페인 줄이기 및 건강관리
-            </Text>
+            <Text style={styles.challengeInfoLine1}>• {item.targetMenuName}</Text>
+            <Text style={styles.challengeInfoLine2}>• {item.description}</Text>
           </>
         ) : (
           <>

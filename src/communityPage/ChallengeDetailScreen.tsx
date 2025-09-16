@@ -1,5 +1,6 @@
-// screens/ChallengeDetailScreen.tsx
 import React, { useState } from 'react';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 import {
     StyleSheet,
     ScrollView,
@@ -8,7 +9,6 @@ import {
     Text,
     Image,
     TouchableOpacity,
-    Modal,
 } from 'react-native';
 import { useNavigation, useRoute } from '@react-navigation/native';
 import Header from '../components/Header';
@@ -18,21 +18,111 @@ import CompleteButton from '../components/CompleteButton';
 const DAY_COUNT = 7;
 const rating = 4;
 
+type ChallengeState = '참여전' | '참여중' | '실패' | '성공';
+
+const mapStatusToState = (status: string): ChallengeState => {
+    switch (status) {
+        case 'PENDING':
+            return '참여전';
+        case 'IN_PROGRESS':
+            return '참여중';
+        case 'COMPLETED':
+            return '성공';
+        default:
+            return '참여전';
+    }
+};
+
 const ChallengeDetailScreen = () => {
     const navigation = useNavigation<any>();
     const route = useRoute<any>();
+    const { challenge } = route.params;
 
-    // 넘어온 state 값이 '참여중'이면 true
-    const initialState = route.params?.state as '참여전' | '참여중' | '실패' | '성공';
+    // 서버에서 받은 status를 한글로 변환
+    const [status, setStatus] = useState<ChallengeState>(
+        mapStatusToState(challenge.status)
+    );
+
     const [joined, setJoined] = useState(
-        initialState === '참여중' || initialState === '실패' || initialState === '성공'
+        ['참여중', '성공', '실패'].includes(mapStatusToState(challenge.status))
     );
 
     const [doneDays, setDoneDays] = useState<number[]>([3, 5]);
-    const periodText = '25.07.31 ~ 25.08.06';
-
-    // ✅ 포기 모달 상태
     const [showQuitModal, setShowQuitModal] = useState(false);
+
+    const periodText = `${challenge.startDate} ~ ${challenge.endDate}`;
+
+    /* 챌린지 참여하기 API */
+    const handleParticipate = async () => {
+        console.log('🔹 handleParticipate 호출됨');
+
+        try {
+            const token = await AsyncStorage.getItem('accessToken');
+            if (!token) {
+                console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+                return;
+            }
+
+            const response = await axios.post(
+                `http://api.snapmeal.store/challenges/${challenge.challengeId}/participate`,
+                {}, // 참여할 때는 빈 바디
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            console.log('✅ 참여 성공:', response.data);
+
+            setJoined(true);
+            setStatus('참여중');
+        } catch (error: any) {
+            if (axios.isAxiosError(error)) {
+                console.log('❌ 챌린지 참여 실패 - 응답:', error.response?.data);
+            } else {
+                console.log('❌ 알 수 없는 에러:', JSON.stringify(error, null, 2));
+            }
+        }
+    };
+
+    /** ✅ 챌린지 포기하기 API */
+    const handleGiveUp = async () => {
+        console.log('🔹 handleGiveUp 호출됨');
+
+        try {
+            const token = await AsyncStorage.getItem('accessToken');
+            if (!token) {
+                console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+                return;
+            }
+
+            const response = await axios.post(
+                `http://api.snapmeal.store/challenges/${challenge.challengeId}/give-up`,
+                { status: 'CANCELLED' }, // 서버에 상태 전달
+                {
+                    headers: {
+                        Authorization: `Bearer ${token}`,
+                        'Content-Type': 'application/json',
+                    },
+                }
+            );
+
+            console.log('✅ 포기 성공:', response.data);
+
+            // 상태를 '참여전'으로 돌리고 UI 반영
+            setJoined(false);
+            setStatus('참여전');
+            setShowQuitModal(false);
+        } catch (error: any) {
+            if (axios.isAxiosError(error)) {
+                console.log('❌ 챌린지 포기 실패 - 응답:', error.response?.data);
+            } else {
+                console.log('❌ 알 수 없는 에러:', JSON.stringify(error, null, 2));
+            }
+        }
+    };
 
     return (
         <View style={styles.wrap}>
@@ -41,7 +131,7 @@ const ChallengeDetailScreen = () => {
                 style={styles.container}
                 contentContainerStyle={{ paddingBottom: 120 }}
             >
-                <Header title="커피 마시지 않기" backgroundColor="#FAFAFA" />
+                <Header title={challenge.title} backgroundColor="#FAFAFA" />
 
                 {/* 배경 이미지 */}
                 <Image
@@ -50,13 +140,13 @@ const ChallengeDetailScreen = () => {
                     resizeMode="cover"
                 />
 
-                {/* 참여 후: 진행상황 카드 */}
+                {/* 진행 상황 카드 */}
                 {joined && (
                     <View style={styles.card}>
                         <Text style={styles.cardTitle}>
-                            {initialState === '성공'
+                            {status === '성공'
                                 ? `챌린지 결과 - 성공 (${periodText})`
-                                : initialState === '실패'
+                                : status === '실패'
                                     ? `챌린지 결과 - 실패 (${periodText})`
                                     : `챌린지 진행 상황 (${periodText})`}
                         </Text>
@@ -108,40 +198,35 @@ const ChallengeDetailScreen = () => {
 
                     <View style={styles.row}>
                         <Text style={styles.label}>주 목표</Text>
-                        <Text style={styles.value}>커피 안마시기</Text>
+                        <Text style={styles.value}>{challenge.targetMenuName}</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>목적</Text>
-                        <Text style={styles.value}>카페인 줄이기 및 건강 관리</Text>
+                        <Text style={styles.value}>{challenge.title}</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>상세설명</Text>
-                        <Text style={styles.value}>
-                            아메리카노, 에스프레소, 라떼 등 모든 커피 종류 포함
-                        </Text>
+                        <Text style={styles.value}>{challenge.description}</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>달성 기간</Text>
-                        <Text style={styles.value}>주 5회 이상</Text>
+                        <Text style={styles.value}>미연결</Text>
                     </View>
                     <View style={styles.row}>
                         <Text style={styles.label}>달성 조건</Text>
-                        <Text style={styles.value}>기간 동안 커피 관련 미기록시 성공</Text>
+                        <Text style={styles.value}>미연결</Text>
                     </View>
                 </View>
             </ScrollView>
 
-            {/* 하단 버튼 영역 */}
+            {/* 하단 버튼 */}
             {!joined ? (
-                <CompleteButton
-                    title="챌린지 참여하기"
-                    onPress={() => setJoined(true)}
-                />
-            ) : initialState === '성공' || initialState === '실패' ? null : ( // ✅ 성공/실패면 버튼 숨김
+                <CompleteButton title="챌린지 참여하기" onPress={handleParticipate} />
+            ) : status === '성공' || status === '실패' ? null : (
                 <View style={styles.bottomBar}>
                     <TouchableOpacity
                         style={[styles.bottomBtn, styles.bottomBtnDisabled]}
-                        onPress={() => setShowQuitModal(true)} // ✅ 모달 열기
+                        onPress={() => setShowQuitModal(true)}
                     >
                         <Text style={styles.bottomBtnDisabledText}>포기하기</Text>
                     </TouchableOpacity>
@@ -154,13 +239,10 @@ const ChallengeDetailScreen = () => {
                 </View>
             )}
 
-            {/* ✅ 포기 확인 모달 */}
+            {/* 포기 확인 모달 */}
             <QuitConfirmModal
                 visible={showQuitModal}
-                onConfirm={() => {
-                    setJoined(false);     // 참여 전 상태로 변경
-                    setShowQuitModal(false);
-                }}
+                onConfirm={handleGiveUp}
                 onCancel={() => setShowQuitModal(false)}
             />
         </View>
@@ -180,7 +262,7 @@ const styles = StyleSheet.create({
         borderRadius: 16,
         elevation: 2,
     },
-    cardTitle: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 12 },
+    cardTitle: { fontSize: 14, fontWeight: '600', color: '#333', marginBottom: 15 },
 
     stampGrid: {
         flexDirection: 'row',
@@ -217,8 +299,8 @@ const styles = StyleSheet.create({
     star: { width: 19.61, height: 19.61, marginHorizontal: 1 },
 
     detailBox: { paddingHorizontal: 48, paddingTop: 15 },
-    sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 12 },
-    row: { flexDirection: 'row', marginBottom: 8 },
+    sectionTitle: { fontSize: 18, fontWeight: '700', marginBottom: 34 },
+    row: { flexDirection: 'row', marginBottom: 15, gap: 20, },
     label: { width: 80, fontWeight: '500', color: '#A1A1A1' },
     value: { flex: 1, color: '#121212' },
 
@@ -252,8 +334,6 @@ const styles = StyleSheet.create({
         lineHeight: 52,
     },
 
-
-    // ✅ 모달 스타일
     modalOverlay: {
         flex: 1,
         backgroundColor: 'rgba(0,0,0,0.5)',
