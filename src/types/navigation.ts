@@ -86,4 +86,5 @@ export type RootStackParamList = {
   EditGoal: undefined;
   EditIdNick: undefined;
   EditPass: undefined;
+  Notification: undefined;
 };

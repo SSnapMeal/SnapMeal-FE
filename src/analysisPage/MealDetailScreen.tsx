@@ -104,11 +104,11 @@ const MealDetailScreen = () => {
         <CustomInput
           label="장소"
           placeholder="장소를 입력하세요"
-          labelColor="#000"
+          labelColor="#17171B"
           helperText=""
           helperColor=""
-          borderColor="#000"
-          textColor="#000"
+          borderColor="#17171B"
+          textColor="#17171B"
           value={place}
           onChangeText={setPlace}
         />

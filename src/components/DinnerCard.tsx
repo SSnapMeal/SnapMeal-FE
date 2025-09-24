@@ -1,22 +1,22 @@
 import React from 'react';
-import { View, Text, Image, StyleSheet } from 'react-native';
+import { View, Text, StyleSheet } from 'react-native';
 
 type DinnerCardProps = {
-  title?: string; // 상단 제목
-  note?: string;  // 설명 텍스트
+  title?: string;   // 상단 제목
+  note?: string;    // 설명 텍스트
+  emoji?: string;   // 이모지 (🌙 등)
 };
 
-const DinnerCard = ({ title, note }: DinnerCardProps) => {
+const DinnerCard = ({ title, note, emoji }: DinnerCardProps) => {
   return (
     <View style={styles.card}>
       {/* title이 있으면 표시 */}
       {title ? <Text style={styles.title}>{title}</Text> : null}
 
       <View style={styles.container}>
-        <Image
-          source={require('../assets/images/dinner-time.png')}
-          style={styles.image}
-        />
+        {/* ✅ 이미지 대신 이모지를 표시 */}
+        <Text style={styles.emoji}>{emoji || '🍽️'}</Text>
+
         <View style={styles.textWrapper}>
           {/* note가 있으면 표시, 없으면 안내 메시지 */}
           <Text style={styles.note}>
@@ -44,10 +44,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginRight: 10,
   },
-  image: {
-    width: 100,
-    height: 100,
-    resizeMode: 'contain',
+  emoji: {
+    fontSize: 48, // 이모지를 크게 보여줌
     marginRight: 11,
   },
   textWrapper: {

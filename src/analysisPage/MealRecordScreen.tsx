@@ -96,22 +96,21 @@ const MealRecordScreen = () => {
                 placeholder="샐러드"
                 value={menuText}
                 onChangeText={setMenuText}
-                labelColor="#000"
+                labelColor="#17171B"
                 // helperText="* 안내메시지"
                 helperColor="red"
-                textColor="#000"
-                borderColor="#000"
+                textColor="#17171B"
+                borderColor="#17171B"
               />
               <CustomNumInput
                 label="칼로리"
                 placeholder="152"
                 value={kcalText}
                 onChangeText={setKcalText}
-                labelColor="#000"
-                // helperText="* 안내메시지"
+                labelColor="#17171B"
                 helperColor="red"
-                textColor="#000"
-                borderColor="#000"
+                textColor="#17171B"
+                borderColor="#17171B"
               />
 
               <View style={{ paddingHorizontal: 27, marginTop: 54 }}>
@@ -189,7 +188,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
   },
   searchText: {
-    color: '#000',
+    color: '#17171B',
     fontWeight: 'bold',
   },
 });

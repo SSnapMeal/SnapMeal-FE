@@ -1,18 +1,46 @@
-import React from 'react';
-import { View, Text, StyleSheet, Image, TouchableOpacity, ScrollView, StatusBar } from 'react-native';
+import React, { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  Image,
+  TouchableOpacity,
+  ScrollView,
+  StatusBar
+} from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Navigation from '../components/Navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
 
-
 const MypageScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+  // 알림 개수
+  const [unreadCount] = useState(1);
 
   return (
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <ScrollView style={styles.container}>
+
+        {/* 상단 알림 버튼 */}
+        <View style={styles.bellContainer}>
+          <TouchableOpacity
+            style={styles.bellWrapper}
+            onPress={() => navigation.navigate('Notification')}
+          >
+            <Image
+              source={require('../assets/images/bell.png')}
+              style={styles.bell}
+            />
+            {unreadCount > 0 && (
+              <View style={styles.bellBadge}>
+                <Text style={styles.bellBadgeText}>{unreadCount}</Text>
+              </View>
+            )}
+          </TouchableOpacity>
+        </View>
+
         {/* 상단 사용자 정보 */}
         <View style={styles.profileSection}>
           <Image
@@ -71,7 +99,7 @@ const styles = StyleSheet.create({
     flex: 1,
     backgroundColor: '#fff',
     paddingHorizontal: 26,
-    paddingTop: 33,
+    paddingTop: 6,
   },
   profileSection: {
     flexDirection: 'row',
@@ -94,11 +122,39 @@ const styles = StyleSheet.create({
   },
   profileType: {
     fontSize: 14,
-    marginTop: 2
+    marginTop: 2,
   },
   arrowImage: {
     width: 21,
-    height: 42
+    height: 42,
+  },
+  bellContainer: {
+    alignItems: 'flex-end',
+  },
+  bellWrapper: {
+    position: 'relative',
+    width: 28,
+    height: 28,
+  },
+  bell: {
+    width: 28,
+    height: 28,
+  },
+  bellBadge: {
+    position: 'absolute',
+    top: -6,
+    right: -6,
+    backgroundColor: '#FF3B30',
+    borderRadius: 10,
+    width: 20,
+    height: 20,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  bellBadgeText: {
+    color: '#fff',
+    fontSize: 12,
+    fontWeight: 'bold',
   },
   badgeRow: {
     flexDirection: 'row',
@@ -117,7 +173,7 @@ const styles = StyleSheet.create({
   sectionHeader: {
     flexDirection: 'row',
     alignItems: 'center',
-    marginTop: 24, // 섹션 간 여백
+    marginTop: 24,
   },
   sectionTitle: {
     color: '#38B000',

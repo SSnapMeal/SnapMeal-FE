@@ -38,38 +38,38 @@ const EditIdNickScreen = () => {
                 {step === 1 ? (
                     <CustomInput
                         label="본인 확인을 위해 비밀번호를 입력해주세요"
-                        textColor="#000"
+                        textColor="#17171B"
                         placeholder="snap12^^"
                         value={password}
                         onChangeText={setPassword}
                         helperText="* 올바른 비밀번호가 아닙니다"
                         helperColor="#F00"
-                        labelColor="#000"
-                        borderColor="#000"
+                        labelColor="#17171B"
+                        borderColor="#17171B"
                     />
                 ) : (
                     <>
                         <CustomInput
                             label="새 아이디"
-                            textColor="#000"
+                            textColor="#17171B"
                             placeholder="snap12"
                             value={newId}
                             onChangeText={setNewId}
                             helperText="* 사용 중인 아이디입니다"
                             helperColor="#F00"
-                            labelColor="#000"
-                            borderColor="#000"
+                            labelColor="#17171B"
+                            borderColor="#17171B"
                         />
                         <CustomInput
                             label="새 닉네임"
-                            textColor="#000"
+                            textColor="#17171B"
                             placeholder="스냅이"
                             value={newNick}
                             onChangeText={setNewNick}
                             helperText="* 이미 존재하는 닉네임입니다"
                             helperColor="#F00"
-                            labelColor="#000"
-                            borderColor="#000"
+                            labelColor="#17171B"
+                            borderColor="#17171B"
                         />
                     </>
                 )}

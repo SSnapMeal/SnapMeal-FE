@@ -302,7 +302,7 @@ const styles = StyleSheet.create({
   },
   cardMenu: {
     fontSize: 24,
-    color: '#000',
+    color: '#17171B',
     position: 'absolute',
     top: 6,
     right: 15,
@@ -362,7 +362,7 @@ const styles = StyleSheet.create({
     borderRadius: 8,
     paddingVertical: 8,
     width: 120,
-    shadowColor: '#000',
+    shadowColor: '#17171B',
     shadowOpacity: 0.2,
     shadowOffset: { width: 0, height: 2 },
     shadowRadius: 4,
@@ -374,14 +374,14 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 14,
-    color: '#000',
+    color: '#17171B',
   },
   menuButton: {
     position: 'absolute',
     top: 6,
     right: 15,
-    padding: 8,        // 버튼 터치 영역 확보
-    zIndex: 10,        // 다른 요소 위에 표시되도록
+    padding: 8,
+    zIndex: 10,
   },
 });
 

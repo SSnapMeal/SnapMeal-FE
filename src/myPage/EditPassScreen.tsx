@@ -19,30 +19,30 @@ const EditPassScreen = () => {
             <View style={styles.container}>
                 <CustomInput
                     label="기존 비밀번호"
-                    textColor="#000"
+                    textColor="#17171B"
                     placeholder="snap12^^"
                     helperText="* 비밀번호가 일치하지 않습니다"
                     helperColor="#F00"
-                    labelColor="#000"
-                    borderColor="#000"
+                    labelColor="#17171B"
+                    borderColor="#17171B"
                 />
                 <CustomInput
                     label="새 비밀번호"
-                    textColor="#000"
+                    textColor="#17171B"
                     placeholder="snap12^^"
                     helperText="* 올바른 비밀번호가 아닙니다"
                     helperColor="#F00"
-                    labelColor="#000"
-                    borderColor="#000"
+                    labelColor="#17171B"
+                    borderColor="#17171B"
                 />
                 <CustomInput
                     label="새 비밀번호 확인"
-                    textColor="#000"
+                    textColor="#17171B"
                     placeholder="snap12^^"
                     helperText="* 비밀번호가 일치하지 않습니다"
                     helperColor="#F00"
-                    labelColor="#000"
-                    borderColor="#000"
+                    labelColor="#17171B"
+                    borderColor="#17171B"
                 />
             </View>
             <CompleteButton onPress={handleComplete} />

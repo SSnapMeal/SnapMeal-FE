@@ -48,20 +48,20 @@ const EditGoalScreen = () => {
             <View style={styles.container}>
                 <CustomNumInput
                     label="권장 칼로리"
-                    textColor="#000"
+                    textColor="#17171B"
                     placeholder="2000"
                     helperText="* 칼로리를 입력해주세요"
                     helperColor="#F00"
-                    labelColor="#000"
-                    borderColor="#000"
+                    labelColor="#17171B"
+                    borderColor="#17171B"
                 />
                 <CustomNumInput
                     label="권장 운동량"
                     placeholder="5 (km)"
                     helperText="* 운동량을 입력해주세요"
                     helperColor="#F00"
-                    labelColor="#000"
-                    borderColor="#000"
+                    labelColor="#17171B"
+                    borderColor="#17171B"
                 />
             </View>
             <CompleteButton onPress={handleComplete} />

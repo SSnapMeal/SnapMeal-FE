@@ -124,31 +124,42 @@ const AnalysisScreen = () => {
     const fetchMeal = async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
+
+        // ✅ 선택한 날짜를 YYYY-MM-DD로 변환
+        const selectedDay = selectedDate.format('YYYY-MM-DD');
+        console.log('🌐 API 요청 날짜:', selectedDay);
+
         const response = await axios.get('http://api.snapmeal.store/meals', {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
+          params: {
+            date: selectedDay, // <-- 날짜를 쿼리 파라미터로 전달
+          },
         });
 
-        const result = response.data?.result;
-        console.log('🍽 서버에서 받은 데이터:', result);
+        console.log('📡 서버 응답 데이터:', response.data);
 
+        const result = response.data?.result;
         const list = Array.isArray(result) ? result : result ? [result] : [];
 
         const meals: CardData[] = list
           .map((item: any) => {
-            const id = Number(item.mealId ?? item.id);      // ✅ 서버 키에 맞게 매핑
-            if (!Number.isFinite(id)) return null;          // id 없으면 필터링
+            const id = Number(item.mealId ?? item.id);
+            if (!Number.isFinite(id)) return null;
+
             const top2 = pickTop2Nutrients(item);
 
             return {
-              imageSource: item.imageUrl ? { uri: item.imageUrl } : require('../assets/images/food_sample.png'),
+              imageSource: item.imageUrl
+                ? { uri: item.imageUrl }
+                : require('../assets/images/food_sample.png'),
               title: item.className ?? item.title ?? '식사',
               mealTime: mealTypeMap[item.mealType] || '',
               topNutrients: top2,
               tag: '적정',
-              mealId: id,                                   // ✅ 필수
+              mealId: id,
             };
           })
           .filter(Boolean) as CardData[];
@@ -160,7 +171,7 @@ const AnalysisScreen = () => {
     };
 
     fetchMeal();
-  }, []);
+  }, [selectedDate]); // ✅ 날짜가 바뀔 때마다 API 요청
 
   useEffect(() => {
     const fetchRecommendation = async () => {
@@ -326,7 +337,11 @@ const AnalysisScreen = () => {
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <SafeAreaView style={styles.container}>
-        <ScrollView contentContainerStyle={styles.scroll}>
+        <ScrollView
+          contentContainerStyle={styles.scroll}
+          keyboardShouldPersistTaps="handled"
+          nestedScrollEnabled={true}
+        >
           <TouchableOpacity onPress={() => navigation.navigate('Report')}>
             <Text style={styles.reportLink}>리포트 보러가기 {'>>'}</Text>
           </TouchableOpacity>
@@ -347,7 +362,10 @@ const AnalysisScreen = () => {
 
           {selectedTabIndex === 0 ? (
             <>
-              <CalorieProgress consumedKcal={consumedKcal} recommendedKcal={recommendedKcal} />
+              <CalorieProgress
+                consumedKcal={recommendData.consumedCalories}
+                recommendedKcal={recommendData.consumedCalories + recommendData.remainingCalories}
+              />
 
               {serverMeals.map((meal, index) => (
                 <DietCard
@@ -412,7 +430,7 @@ const styles = StyleSheet.create({
     borderRadius: 35,
     justifyContent: 'center',
     alignItems: 'center',
-    shadowColor: '#000',
+    shadowColor: '#17171B',
     shadowOffset: { width: 2, height: 2 },
     shadowOpacity: 0.25,
     shadowRadius: 4,

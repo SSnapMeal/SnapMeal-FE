@@ -1,4 +1,4 @@
-import React, { useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { View, Text, TouchableOpacity, PanResponder, StyleSheet } from 'react-native';
 import dayjs from 'dayjs';
 
@@ -50,10 +50,14 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
       const bgColor = marked[dateStr];
 
       cells.push(
-        <TouchableOpacity key={dateStr} style={styles.cell} onPress={() => {
-          setSelectedDate(date);
-          if (isExpanded) toggleExpanded();
-        }}
+        <TouchableOpacity
+          key={dateStr}
+          style={styles.cell}
+          onPress={() => {
+            console.log('📆 사용자가 선택한 날짜:', dateStr); // ✅ 클릭할 때 즉시 콘솔 출력
+            setSelectedDate(date); // state 업데이트
+            if (isExpanded) toggleExpanded();
+          }}
         >
           <View style={styles.cellInner}>
             {isSelected && <View style={styles.selectedBox} />}
@@ -91,6 +95,10 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
       </View>
     );
   };
+
+  useEffect(() => {
+    console.log('📆 selectedDate 변경됨:', selectedDate.format('YYYY-MM-DD'));
+  }, [selectedDate]);
 
   return (
     <>
@@ -188,7 +196,7 @@ const styles = StyleSheet.create({
   },
   cellText: {
     fontSize: 16,
-    color: '#000',
+    color: '#17171B',
     zIndex: 2,
     includeFontPadding: false,
     textAlignVertical: 'center',

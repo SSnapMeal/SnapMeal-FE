@@ -1,5 +1,4 @@
-// screens/ChallengeActiveScreen.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -12,28 +11,48 @@ import {
 import Header from '../components/Header';
 import DietCard from '../components/DietCard';
 import { useNavigation } from '@react-navigation/native';
-
-// TODO: 실제 앱에서는 공통 데이터소스(예: /data/challenges.ts)로 분리하세요.
-const challenges = [
-  {
-    id: 1,
-    title: '커피 마시지 않기',
-    imageSource: require('../assets/images/coffee.png'),
-    state: '참여중' as const,
-  },
-  {
-    id: 2,
-    title: '야식 줄이기',
-    imageSource: require('../assets/images/coffee.png'),
-    state: '참여중' as const,
-  },
-];
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const ChallengeActiveScreen = () => {
   const navigation = useNavigation<any>();
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
 
   // 참여중만 필터링
   const activeChallenges = challenges.filter(c => c.state === '참여중');
+
+  const fetchActiveChallenges = async () => {
+    try {
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+        return;
+      }
+
+      const response = await axios.get('http://api.snapmeal.store/challenges/my', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        params: {
+          statuses: 'IN_PROGRESS', // 참여중 챌린지만 불러오기
+        },
+      });
+
+      console.log('🔥 참여중 챌린지 데이터:', response.data);
+      setChallenges(response.data); // 서버에서 받은 데이터 저장
+    } catch (error) {
+      console.error('❌ 챌린지 데이터 불러오기 실패:', error);
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  // 컴포넌트가 마운트되면 API 호출
+  useEffect(() => {
+    fetchActiveChallenges();
+  }, []);
 
   return (
     <ScrollView style={styles.container}>
@@ -42,11 +61,13 @@ const ChallengeActiveScreen = () => {
 
       <View style={styles.topRow}>
         <Text style={styles.titleText}>
-          총 {activeChallenges.length}개의 챌린지
+          총 {challenges.length}개의 챌린지
         </Text>
       </View>
 
-      {activeChallenges.length === 0 ? (
+      {loading ? (
+        <Text style={{ textAlign: 'center', marginTop: 20 }}>로딩중...</Text>
+      ) : challenges.length === 0 ? (
         <View style={styles.emptyState}>
           <Image
             source={require('../assets/images/snap.png')}
@@ -59,20 +80,26 @@ const ChallengeActiveScreen = () => {
         </View>
       ) : (
         <View style={styles.cardList}>
-          {activeChallenges.map(challenge => (
+          {challenges.map(challenge => (
             <TouchableOpacity
-              key={challenge.id}
+              key={challenge.challengeId}
               activeOpacity={0.8}
               onPress={() =>
-                navigation.navigate('ChallengeDetail', { state: challenge.state })
+                navigation.navigate('ChallengeDetail', {
+                  challengeId: challenge.challengeId,
+                  state: '참여중',
+                })
               }
             >
               <DietCard
                 variant="challenge"
-                challengeState={challenge.state}
+                challengeState="참여중"
                 additionalMeal={{
-                  imageSource: challenge.imageSource,
+                  imageSource: require('../assets/images/coffee.png'), // 서버에서 이미지 URL 받으면 변경
                   title: challenge.title,
+                  targetMenuName: challenge.targetMenuName,
+                  description: challenge.description,
+                  mealId: challenge.challengeId,
                 }}
               />
             </TouchableOpacity>
