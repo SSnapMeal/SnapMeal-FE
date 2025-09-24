@@ -11,7 +11,7 @@ type HeaderProps = {
 const Header = ({
   title,
   backgroundColor = '#fff',
-  showBackArrow = true, // ← 여기!
+  showBackArrow = true,
 }: HeaderProps) => {
   const navigation = useNavigation();
 

@@ -29,7 +29,7 @@ const styles = StyleSheet.create({
     itemText: {
         fontSize: 16,
         fontWeight: '500',
-        color: '#000',
+        color: '#17171B',
     },
     kcalText: {
         position: 'absolute',

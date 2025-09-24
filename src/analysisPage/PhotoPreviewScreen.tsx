@@ -114,13 +114,22 @@ const PhotoPreviewScreen = () => {
     const fetchNutritionData = async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
-        if (!foodNames.length || typeof imageId !== 'number') {
-          Alert.alert('이미지를 먼저 업로드하거나, 감지된 음식이 없습니다.');
+
+        console.log('🍳 foodNames:', foodNames);
+        console.log('🖼 imageId:', imageId);
+        console.log('🛂 accessToken:', token);
+
+        if (!foodNames.length || !imageId || !token) {
+          Alert.alert('필요한 정보가 누락되었습니다.');
           return;
         }
+
         const response = await axios.post(
           'http://api.snapmeal.store/nutritions/analyze',
-          { foodNames, imageId },
+          {
+            foodNames,
+            imageId: Number(imageId),
+          },
           {
             headers: {
               Authorization: `Bearer ${token}`,
@@ -128,12 +137,38 @@ const PhotoPreviewScreen = () => {
             },
           }
         );
-        setNutrients(response.data);
-        setNutritionId(response.data.nutritionId);
+
+        console.log('전체 서버 응답:', response.data);
+
+        if (response.data?.result) {
+          const nutrition = response.data.result;
+
+          console.log('📡 nutrition result:', nutrition);
+
+          setNutrients({
+            calories: nutrition.calories,
+            protein: nutrition.protein,
+            carbs: nutrition.carbs,
+            sugar: nutrition.sugar,
+            fat: nutrition.fat,
+          });
+
+          setNutritionId(nutrition.nutritionId);
+        } else {
+          console.warn('⚠️ result가 없습니다.', response.data);
+        }
       } catch (error) {
-        console.error('❌ 영양 분석 실패:', error);
+        if (axios.isAxiosError(error)) {
+          console.error('❌ API 요청 실패:',
+            'status:', error.response?.status,
+            'data:', error.response?.data
+          );
+        } else {
+          console.error('❌ 알 수 없는 오류:', error);
+        }
       }
     };
+
     fetchNutritionData();
   }, [imageId, classNames]);
 
@@ -232,7 +267,7 @@ const styles = StyleSheet.create({
     paddingTop: 40,
     alignItems: 'center',
     elevation: 2,
-    shadowColor: '#000',
+    shadowColor: '#17171B',
     marginHorizontal: 28,
     marginBottom: 62,
   },

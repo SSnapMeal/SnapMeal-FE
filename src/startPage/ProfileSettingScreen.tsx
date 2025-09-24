@@ -157,21 +157,21 @@ const ProfileSettingScreen = () => {
 
 const styles = StyleSheet.create({
     titleText: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 24,
         fontWeight: '700',
         marginTop: 23,
     },
     subtitleText: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 14,
         fontWeight: '400',
         marginTop: 21,
     },
     nicknameTitle: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 16,
         fontWeight: '700',
@@ -199,7 +199,7 @@ const styles = StyleSheet.create({
         padding: 16,
     },
     habitTitle: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 16,
         fontWeight: '700',
@@ -226,7 +226,7 @@ const styles = StyleSheet.create({
         lineHeight: 18,
     },
     tagTextActive: {
-        color: '#000',
+        color: '#17171B',
     },
 });
 

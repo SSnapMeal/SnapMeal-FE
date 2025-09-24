@@ -74,14 +74,14 @@ const ProfileSettingScreen = () => {
 
 const styles = StyleSheet.create({
     titleText: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 24,
         fontWeight: 700,
         marginTop: 23,
     },
     subtitleText: {
-        color: '#000',
+        color: '#17171B',
         textAlign: 'center',
         fontSize: 14,
         fontWeight: 400,
@@ -92,7 +92,7 @@ const styles = StyleSheet.create({
         justifyContent: 'center',
         alignItems: 'center',
         marginTop: 40,
-        gap: 20, // RN 0.71 이상 사용 시
+        gap: 20,
     },
     lefthandImage: {
         width: 220,
@@ -109,7 +109,7 @@ const styles = StyleSheet.create({
         right: -30
     },
     resultText: {
-        color: '#000',
+        color: '#17171B',
         fontSize: 14,
         fontWeight: 400,
         marginTop: 37,
@@ -117,7 +117,7 @@ const styles = StyleSheet.create({
         marginBottom: 12,
     },
     categoryText: {
-        color: '#000',
+        color: '#17171B',
         fontSize: 28,
         fontWeight: 400,
         paddingHorizontal: 31,

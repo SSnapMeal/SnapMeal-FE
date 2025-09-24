@@ -51,6 +51,9 @@ const CommunityScreen = () => {
               Authorization: `Bearer ${token}`,
               'Content-Type': 'application/json',
             },
+            params: {
+              statuses: 'IN_PROGRESS',
+            },
           }
         );
 
@@ -149,37 +152,35 @@ const CommunityScreen = () => {
                 <View style={{ marginHorizontal: -16 }}>
                   {loading ? (
                     <Text style={{ textAlign: 'center', marginTop: 20 }}>로딩중...</Text>
-                  ) : challenges.filter(c => c.status === 'IN_PROGRESS').length === 0 ? (
+                  ) : challenges.length === 0 ? (
                     <Text style={{ textAlign: 'center', marginTop: 20 }}>
                       참여 중인 챌린지가 없습니다.
                     </Text>
                   ) : (
-                    challenges
-                      .filter(c => c.status === 'IN_PROGRESS')
-                      .map(challenge => (
-                        <TouchableOpacity
-                          key={challenge.challengeId}
-                          activeOpacity={0.8}
-                          onPress={() =>
-                            navigation.navigate('ChallengeDetail', {
-                              challengeId: challenge.challengeId,
-                              state: mapStatusToState(challenge.status),
-                            })
-                          }
-                        >
-                          <DietCard
-                            variant="challenge"
-                            challengeState={mapStatusToState(challenge.status)}
-                            additionalMeal={{
-                              imageSource: require('../assets/images/coffee.png'),
-                              title: challenge.title,
-                              targetMenuName: challenge.targetMenuName,
-                              description: challenge.description,
-                              mealId: challenge.challengeId,
-                            }}
-                          />
-                        </TouchableOpacity>
-                      ))
+                    challenges.map(challenge => (
+                      <TouchableOpacity
+                        key={challenge.challengeId}
+                        activeOpacity={0.8}
+                        onPress={() =>
+                          navigation.navigate('ChallengeDetail', {
+                            challengeId: challenge.challengeId,
+                            state: mapStatusToState(challenge.status),
+                          })
+                        }
+                      >
+                        <DietCard
+                          variant="challenge"
+                          challengeState={mapStatusToState(challenge.status)}
+                          additionalMeal={{
+                            imageSource: require('../assets/images/coffee.png'),
+                            title: challenge.title,
+                            targetMenuName: challenge.targetMenuName,
+                            description: challenge.description,
+                            mealId: challenge.challengeId,
+                          }}
+                        />
+                      </TouchableOpacity>
+                    ))
                   )}
                 </View>
               </View>
@@ -296,7 +297,7 @@ const styles = StyleSheet.create({
   },
   iconLabel: {
     fontSize: 13,
-    color: '#000',
+    color: '#17171B',
     textAlign: 'center',
   },
   emptyState: {

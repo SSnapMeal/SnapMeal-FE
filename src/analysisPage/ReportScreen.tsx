@@ -84,6 +84,16 @@ type ReportResponse = {
   healthGuidance: string;
 };
 
+type CaloriePattern = {
+  emoji: string;
+  summaries: string[];
+};
+
+type HealthItem = {
+  title: string;        // 가이드 제목
+  description: string;  // 가이드 설명
+};
+
 const ReportScreen = () => {
   const navigation = useNavigation();
   const [selectedTab, setSelectedTab] = useState<'주간' | '월간'>('주간');
@@ -104,8 +114,8 @@ const ReportScreen = () => {
   ]);
   const [loading, setLoading] = useState<boolean>(true);
   const [nutritionSummary, setNutritionSummary] = useState<string>('');
-  const [caloriePattern, setCaloriePattern] = useState<string>('');
-  const [healthGuidance, setHealthGuidance] = useState<string>('');
+  const [caloriePattern, setCaloriePattern] = useState<CaloriePattern | null>(null);
+  const [healthGuidance, setHealthGuidance] = useState<HealthItem[]>([]);
   const [recommendedExercise, setRecommendedExercise] = useState<string>('');
   const [foodSuggestion, setFoodSuggestion] = useState<string>('');
 
@@ -135,7 +145,22 @@ const ReportScreen = () => {
           throw new Error('토큰이 없습니다. 로그인 후 이용해주세요.');
         }
 
-        const res = await fetch('http://api.snapmeal.store/reports/me', {
+        // ✅ 이번 주 월요일 날짜 계산
+        const today = dayjs();
+        const dayOfWeek = today.day(); // 0: 일요일 ~ 6: 토요일
+        const monday =
+          dayOfWeek === 0
+            ? today.subtract(6, 'day') // 오늘이 일요일이면 지난주 월요일로
+            : today.subtract(dayOfWeek - 1, 'day'); // 그 외에는 이번 주 월요일
+
+        const mondayStr = monday.format('YYYY-MM-DD');
+        console.log('📅 이번 주 월요일 날짜:', mondayStr);
+
+        // ✅ API 요청 URL
+        const url = `http://api.snapmeal.store/reports/weekly?weekStart=${mondayStr}`;
+        console.log('📡 요청 URL:', url);
+
+        const res = await fetch(url, {
           method: 'GET',
           headers: {
             'Content-Type': 'application/json',
@@ -144,7 +169,6 @@ const ReportScreen = () => {
           signal: controller.signal,
         });
 
-        // 응답 본문을 텍스트로 확인
         const responseText = await res.text();
         console.log('📩 Raw Response:', responseText);
 
@@ -152,46 +176,53 @@ const ReportScreen = () => {
           throw new Error(`HTTP ${res.status} - ${responseText}`);
         }
 
-        // 안전 파싱
-        let data: ReportResponse;
-        try {
-          data = JSON.parse(responseText);
-        } catch {
-          throw new Error('서버 응답이 JSON 형식이 아닙니다.');
+        // ✅ JSON 파싱
+        const json = JSON.parse(responseText);
+        const data = json.result;
+
+        if (!data) {
+          throw new Error('API에서 result가 없습니다.');
         }
+
         console.log('📊 Parsed Data:', data);
 
-        // 1) 주차 라벨: "YY년 M월 N주차" 형태로 변환
-        const labelFromDate = toWeekLabel(data.reportDate);
-
-        // 2) 숫자 필드 방어적 변환
+        // 숫자 값 안전 처리
         const totalCaloriesNum = Number(data.totalCalories) || 0;
         const protein = Number(data.totalProtein) || 0;
         const fat = Number(data.totalFat) || 0;
         const carbs = Number(data.totalCarbs) || 0;
 
-        // 3) 상태 업데이트 (언마운트 시 무시)
         if (isMounted) {
-          setWeekLabelFromApi(labelFromDate);
+          // ✅ 주차 라벨
+          setWeekLabelFromApi(toWeekLabel(data.reportDate));
           setTotalCalories(totalCaloriesNum);
+
+          // ✅ 영양소 데이터 업데이트
           setNutrients([
             { label: '단백질', value: protein, unit: 'g', color: '#CDE8BF' },
             { label: '탄수화물', value: carbs, unit: 'g', color: '#FFD794' },
             { label: '당', value: 0, unit: 'g', color: '#FFC5C6' },
             { label: '지방', value: fat, unit: 'g', color: '#FFF7C2' },
-            { label: '기타', value: 0, unit: 'g', color: '#C9D8F0' },
+            {
+              label: '기타',
+              value: Math.max(totalCaloriesNum - (protein + carbs + fat), 0),
+              unit: 'g',
+              color: '#C9D8F0',
+            },
           ]);
 
-          // ✅ 텍스트 데이터 세팅
+          // ✅ 텍스트 데이터 업데이트
           setNutritionSummary(data.nutritionSummary ?? '');
-          setCaloriePattern(data.caloriePattern ?? '');
-          setHealthGuidance(data.healthGuidance ?? '');
+          setCaloriePattern(data.caloriePattern ?? null); // 객체이므로 null 기본값
           setRecommendedExercise(data.recommendedExercise ?? '');
           setFoodSuggestion(data.foodSuggestion ?? '');
+
+          // ✅ 건강 가이드 배열 업데이트
+          setHealthGuidance(data.healthGuidance ?? []);
         }
 
       } catch (err: any) {
-        if (err?.name === 'AbortError') return; // 화면 떠날 때 요청 중단
+        if (err?.name === 'AbortError') return; // 요청 중단 시 무시
         console.error('❌ fetch error:', err);
         Alert.alert('오류', `리포트 데이터를 불러오지 못했습니다.\n${String(err?.message ?? err)}`);
       } finally {
@@ -206,7 +237,6 @@ const ReportScreen = () => {
       controller.abort();
     };
   }, []);
-
 
   const formatNumber = (n: number) => {
     try {
@@ -265,8 +295,10 @@ const ReportScreen = () => {
 
             <DinnerCard
               title="칼로리 섭취 패턴"
-              note={caloriePattern}
+              emoji={caloriePattern?.emoji} // 예: 🌙
+              note={caloriePattern?.summaries?.join('\n')}
             />
+
             <TipCard healthGuidance={healthGuidance} />
 
             {(!!recommendedExercise || !!foodSuggestion) && (

@@ -307,7 +307,7 @@ const styles = StyleSheet.create({
     marginBottom: 10.1,
   },
   kakaoButtonText: {
-    color: '#000',
+    color: '#17171B',
     fontSize: 16,
     fontWeight: 'bold',
     lineHeight: 16
