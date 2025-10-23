@@ -9,7 +9,7 @@ import {
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
 import Navigation from '../components/Navigation';
-import DietCard from '../components/DietCard';
+import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
 import { useNavigation } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -85,7 +85,6 @@ const CommunityScreen = () => {
             <View style={styles.searchContainer}>
               <Text style={styles.nick}>스냅</Text>
             </View>
-            <Text style={styles.top}>상위 11% (챌린지 7개 성공)</Text>
           </View>
 
           {/* 콘텐츠 영역 */}
@@ -157,30 +156,25 @@ const CommunityScreen = () => {
                       참여 중인 챌린지가 없습니다.
                     </Text>
                   ) : (
-                    challenges.map(challenge => (
-                      <TouchableOpacity
-                        key={challenge.challengeId}
-                        activeOpacity={0.8}
-                        onPress={() =>
-                          navigation.navigate('ChallengeDetail', {
-                            challengeId: challenge.challengeId,
-                            state: mapStatusToState(challenge.status),
-                          })
-                        }
-                      >
-                        <DietCard
-                          variant="challenge"
-                          challengeState={mapStatusToState(challenge.status)}
-                          additionalMeal={{
-                            imageSource: require('../assets/images/coffee.png'),
-                            title: challenge.title,
-                            targetMenuName: challenge.targetMenuName,
-                            description: challenge.description,
-                            mealId: challenge.challengeId,
-                          }}
+                    challenges.map((challenge: any) => {
+                      const state = mapStatusToState(challenge.status) as ChallengeState;
+                      return (
+                        <ChallengeCard
+                          key={challenge.challengeId}
+                          imageSource={require('../assets/images/coffee.png')}
+                          title={challenge.title}
+                          targetMenuName={challenge.targetMenuName}
+                          description={challenge.description}
+                          state={state}
+                          // 진행률이 있으면 이렇게: progressText={`${challenge.done}/${challenge.total}`}
+                          onPress={() =>
+                            navigation.navigate('ChallengeDetail', {
+                              challenge: { ...challenge, state },
+                            })
+                          }
                         />
-                      </TouchableOpacity>
-                    ))
+                      );
+                    })
                   )}
                 </View>
               </View>

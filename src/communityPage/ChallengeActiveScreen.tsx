@@ -86,8 +86,10 @@ const ChallengeActiveScreen = () => {
               activeOpacity={0.8}
               onPress={() =>
                 navigation.navigate('ChallengeDetail', {
-                  challengeId: challenge.challengeId,
-                  state: '참여중',
+                  challenge: {
+                    ...challenge,
+                    state: '참여중', // ✅ 추가로 클라이언트 전용 상태값 전달
+                  },
                 })
               }
             >
@@ -95,7 +97,7 @@ const ChallengeActiveScreen = () => {
                 variant="challenge"
                 challengeState="참여중"
                 additionalMeal={{
-                  imageSource: require('../assets/images/coffee.png'), // 서버에서 이미지 URL 받으면 변경
+                  imageSource: require('../assets/images/coffee.png'),
                   title: challenge.title,
                   targetMenuName: challenge.targetMenuName,
                   description: challenge.description,

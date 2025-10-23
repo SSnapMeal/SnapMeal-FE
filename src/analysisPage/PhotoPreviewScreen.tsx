@@ -2,7 +2,7 @@ import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, StatusBar, Alert,
 } from 'react-native';
-import { PieChart } from 'react-native-svg-charts';
+import { PieChart } from 'react-native-chart-kit';
 import Header from '../components/Header';
 import InfoCardItem from '../components/InfoCardItem';
 import NutrientList from '../components/NutrientList';
@@ -78,9 +78,11 @@ const PhotoPreviewScreen = () => {
   }));
 
   const pieData = data.map(item => ({
-    value: item.value,
-    svg: { fill: item.color },
-    key: item.key,
+    name: item.label,
+    population: item.grams,
+    color: item.color,
+    legendFontColor: '#444',
+    legendFontSize: 12,
   }));
 
   const details = [
@@ -219,7 +221,18 @@ const PhotoPreviewScreen = () => {
             ref={scrollRef}
           >
             <View style={{ width: cardWidth, alignItems: 'center', justifyContent: 'center' }}>
-              <PieChart style={styles.chart} data={pieData} outerRadius={'95%'} innerRadius={'54%'} padAngle={0} />
+              {/* <PieChart
+                data={pieData}
+                width={190}
+                height={190}
+                accessor="population"
+                backgroundColor="transparent"
+                chartConfig={{
+                  color: () => '#000',
+                }}
+                hasLegend={false}
+                paddingLeft="10"
+              /> */}
             </View>
 
             <View style={{ width: cardWidth }}>
