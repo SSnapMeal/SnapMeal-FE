@@ -1,48 +1,84 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
   StatusBar,
   View,
   Text,
-  TouchableOpacity,
+  ActivityIndicator,
 } from 'react-native';
 import Header from '../components/Header';
 import TabSwitcher from '../components/TabSwitcher';
-import DietCard from '../components/DietCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import axios from 'axios';
+import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
 
-// 챌린지 데이터 배열 (예시)
-const challenges = [
-  {
-    id: 1,
-    title: '커피 마시지 않기',
-    imageSource: require('../assets/images/coffee.png'),
-    state: '성공' as const,
-  },
-  {
-    id: 2,
-    title: '야식 줄이기',
-    imageSource: require('../assets/images/coffee.png'),
-    state: '실패' as const,
-  },
-  {
-    id: 3,
-    title: '물 하루 2L 마시기',
-    imageSource: require('../assets/images/coffee.png'),
-    state: '성공' as const,
-  },
-];
+const mapStatusToState = (status: string): ChallengeState => {
+  switch (status) {
+    case 'SUCCESS':
+    case 'COMPLETED':
+      return '성공';
+    case 'FAIL':
+    case 'FAILED':
+      return '실패';
+    default:
+      return '참여전';
+  }
+};
 
 const ChallengeDoneScreen = () => {
   const [selectedTab, setSelectedTab] = useState<'전체' | '성공'>('전체');
+  const [challenges, setChallenges] = useState<any[]>([]);
+  const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
 
-  // 탭에 따라 자동 필터링
+  // ✅ 완료된 챌린지 불러오기 함수 (마운트 + 포커스에서 같이 사용)
+  const fetchChallenges = useCallback(async () => {
+    try {
+      setLoading(true);
+
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error('토큰이 없습니다. 로그인 후 다시 시도해주세요.');
+        setChallenges([]);
+        return;
+      }
+
+      const res = await axios.get('http://api.snapmeal.store/challenges/my', {
+        headers: {
+          Authorization: `Bearer ${token}`,
+          'Content-Type': 'application/json',
+        },
+        params: {
+          statuses: 'FAIL,SUCCESS',
+        },
+      });
+
+      setChallenges(res.data);
+    } catch (e) {
+      console.error('완료된 챌린지 불러오기 실패:', e);
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
+  // 🔹 첫 진입 시 한 번 호출
+  useEffect(() => {
+    fetchChallenges();
+  }, [fetchChallenges]);
+
+  // 🔹 다른 화면 갔다가 돌아올 때마다 새로고침
+  useFocusEffect(
+    useCallback(() => {
+      fetchChallenges();
+    }, [fetchChallenges])
+  );
+
   const filteredChallenges =
     selectedTab === '전체'
-      ? challenges.filter(c => c.state === '성공' || c.state === '실패')
-      : challenges.filter(c => c.state === '성공');
+      ? challenges
+      : challenges.filter(c => c.status === 'SUCCESS');
 
   return (
     <ScrollView style={styles.container}>
@@ -60,26 +96,32 @@ const ChallengeDoneScreen = () => {
         />
       </View>
 
-      {/* 카드 리스트 */}
       <View style={styles.cardList}>
-        {filteredChallenges.map(challenge => (
-          <TouchableOpacity
-            key={challenge.id}
-            activeOpacity={0.8}
-            onPress={() =>
-              navigation.navigate('ChallengeDetail', { state: challenge.state })
-            }
-          >
-            <DietCard
-              variant="challenge"
-              challengeState={challenge.state}
-              additionalMeal={{
-                imageSource: challenge.imageSource,
-                title: challenge.title,
-              }}
+        {loading ? (
+          <ActivityIndicator size="large" color="#888" style={{ marginTop: 40 }} />
+        ) : filteredChallenges.length === 0 ? (
+          <Text style={styles.emptyText}>완료된 챌린지가 없습니다</Text>
+        ) : (
+          filteredChallenges.map(challenge => (
+            <ChallengeCard
+              key={challenge.challengeId}
+              imageSource={require('../assets/images/challenge_background.png')}
+              title={challenge.title}
+              targetMenuName={challenge.targetMenuName}
+              description={challenge.description}
+              state={mapStatusToState(challenge.status)}
+              onPress={() =>
+                navigation.navigate('ChallengeDetail', {
+                  challenge: {
+                    ...challenge,
+                    introduction: challenge.introduction ?? {},
+                    stamps: Array.isArray(challenge.stamps) ? challenge.stamps : [],
+                  },
+                })
+              }
             />
-          </TouchableOpacity>
-        ))}
+          ))
+        )}
       </View>
     </ScrollView>
   );
@@ -95,6 +137,13 @@ const styles = StyleSheet.create({
   tabTitle: { fontSize: 18, fontWeight: '700', marginLeft: 2, marginTop: 41 },
   cardList: {
     marginTop: 20,
+    marginBottom: 40,
+  },
+  emptyText: {
+    textAlign: 'center',
+    marginTop: 40,
+    fontSize: 16,
+    color: '#999',
   },
 });
 

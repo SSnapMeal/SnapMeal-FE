@@ -21,19 +21,32 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getValidWeeks = () => {
   const today = dayjs();
-  const oneMonthAgo = today.subtract(1, 'month').startOf('month');
-  const endDate = today.subtract(1, 'week').endOf('week');
 
-  const weeks = [];
-  let current = oneMonthAgo.startOf('week');
+  // 기준 구간: 지난달 시작 ~ 지난 주(완료된 주) 끝
+  const oneMonthAgo = today.subtract(1, 'month').startOf('month');
+  const endDate = today.subtract(1, 'week').endOf('week'); // 지난 주 일요일
+
+  const weeks: {
+    year: number;
+    month: number;
+    week: number;
+    label: string;
+    start: string; // ✅ 월요일
+    end: string;   // 일요일
+  }[] = [];
+
+  // 탐색 시작점을 '그 주의 일요일'로 정하고, 월요일/일요일을 파생해서 씀
+  let current = oneMonthAgo.startOf('week'); // 일요일
   let lastMonth: number | null = null;
   let weekInMonth = 1;
 
   while (current.isBefore(endDate, 'day')) {
-    const startOfWeek = current.startOf('week');
-    const endOfWeek = current.endOf('week');
-    const monthOfWeek = startOfWeek.month();
-    const year = startOfWeek.year();
+    const startOfWeekSun = current.startOf('week');          // 일요일
+    const startOfWeekMon = startOfWeekSun.add(1, 'day');     // ✅ 월요일
+    const endOfWeekSun = startOfWeekSun.endOf('week');       // 일요일
+
+    const monthOfWeek = startOfWeekMon.month();              // ✅ 월요일 기준으로 월 계산
+    const year = startOfWeekMon.year();
 
     if (monthOfWeek !== lastMonth) {
       weekInMonth = 1;
@@ -45,12 +58,12 @@ const getValidWeeks = () => {
       month: monthOfWeek + 1,
       week: weekInMonth,
       label: `${year % 100}년 ${monthOfWeek + 1}월 ${weekInMonth}주차`,
-      start: startOfWeek.format('YYYY-MM-DD'),
-      end: endOfWeek.format('YYYY-MM-DD'),
+      start: startOfWeekMon.format('YYYY-MM-DD'),            // ✅ 서버에 보낼 weekStart(월)
+      end: endOfWeekSun.format('YYYY-MM-DD'),                // 일요일
     });
 
     weekInMonth += 1;
-    current = current.add(1, 'week');
+    current = current.add(1, 'week'); // 다음 주(일요일 기준)로 이동
   }
 
   return weeks;
@@ -101,6 +114,8 @@ const ReportScreen = () => {
   const weeks = useMemo(() => getValidWeeks(), []);
   const [weekIndex, setWeekIndex] = useState(weeks.length);
 
+  const selectedWeek = weeks[weekIndex - 1];
+
   const [weekLabelFromApi, setWeekLabelFromApi] = useState<string>('');
   const [totalCalories, setTotalCalories] = useState<number>(0);
   const [nutrients, setNutrients] = useState<
@@ -113,6 +128,7 @@ const ReportScreen = () => {
     { label: '기타', value: 0, unit: 'g', color: '#C9D8F0' }, // 필요 시 재계산
   ]);
   const [loading, setLoading] = useState<boolean>(true);
+  const [hasData, setHasData] = useState<boolean>(false);
   const [nutritionSummary, setNutritionSummary] = useState<string>('');
   const [caloriePattern, setCaloriePattern] = useState<CaloriePattern | null>(null);
   const [healthGuidance, setHealthGuidance] = useState<HealthItem[]>([]);
@@ -134,30 +150,15 @@ const ReportScreen = () => {
     let isMounted = true;
     const controller = new AbortController();
 
-    const fetchReport = async () => {
+    const fetchReport = async (weekStart: string) => {
       try {
         setLoading(true);
+        setHasData(false);
 
         const token = await AsyncStorage.getItem('accessToken');
-        console.log('🔑 accessToken:', token);
+        if (!token) throw new Error('토큰이 없습니다. 로그인 후 이용해주세요.');
 
-        if (!token) {
-          throw new Error('토큰이 없습니다. 로그인 후 이용해주세요.');
-        }
-
-        // ✅ 이번 주 월요일 날짜 계산
-        const today = dayjs();
-        const dayOfWeek = today.day(); // 0: 일요일 ~ 6: 토요일
-        const monday =
-          dayOfWeek === 0
-            ? today.subtract(6, 'day') // 오늘이 일요일이면 지난주 월요일로
-            : today.subtract(dayOfWeek - 1, 'day'); // 그 외에는 이번 주 월요일
-
-        const mondayStr = monday.format('YYYY-MM-DD');
-        console.log('📅 이번 주 월요일 날짜:', mondayStr);
-
-        // ✅ API 요청 URL
-        const url = `http://api.snapmeal.store/reports/weekly?weekStart=${mondayStr}`;
+        const url = `http://api.snapmeal.store/reports/weekly?weekStart=${weekStart}`;
         console.log('📡 요청 URL:', url);
 
         const res = await fetch(url, {
@@ -170,73 +171,65 @@ const ReportScreen = () => {
         });
 
         const responseText = await res.text();
-        console.log('📩 Raw Response:', responseText);
+        if (!res.ok) throw new Error(`HTTP ${res.status} - ${responseText}`);
 
-        if (!res.ok) {
-          throw new Error(`HTTP ${res.status} - ${responseText}`);
-        }
-
-        // ✅ JSON 파싱
         const json = JSON.parse(responseText);
         const data = json.result;
 
-        if (!data) {
-          throw new Error('API에서 result가 없습니다.');
+        if (!data || Object.keys(data).length === 0) {
+          console.warn('⚠️ 데이터 없음');
+          if (isMounted) {
+            setHasData(false);
+            setLoading(false);
+          }
+          return;
         }
 
-        console.log('📊 Parsed Data:', data);
+        console.log("data", data);
 
-        // 숫자 값 안전 처리
         const totalCaloriesNum = Number(data.totalCalories) || 0;
         const protein = Number(data.totalProtein) || 0;
         const fat = Number(data.totalFat) || 0;
+        const sugar = Number(data.totalSugar) || 0;
         const carbs = Number(data.totalCarbs) || 0;
 
         if (isMounted) {
-          // ✅ 주차 라벨
-          setWeekLabelFromApi(toWeekLabel(data.reportDate));
+          setHasData(true);
+          setWeekLabelFromApi(toWeekLabel(data.reportDate)); // 서버 라벨 우선
           setTotalCalories(totalCaloriesNum);
-
-          // ✅ 영양소 데이터 업데이트
           setNutrients([
             { label: '단백질', value: protein, unit: 'g', color: '#CDE8BF' },
             { label: '탄수화물', value: carbs, unit: 'g', color: '#FFD794' },
-            { label: '당', value: 0, unit: 'g', color: '#FFC5C6' },
+            { label: '당', value: sugar, unit: 'g', color: '#FFC5C6' },
             { label: '지방', value: fat, unit: 'g', color: '#FFF7C2' },
-            {
-              label: '기타',
-              value: Math.max(totalCaloriesNum - (protein + carbs + fat), 0),
-              unit: 'g',
-              color: '#C9D8F0',
-            },
           ]);
-
-          // ✅ 텍스트 데이터 업데이트
           setNutritionSummary(data.nutritionSummary ?? '');
-          setCaloriePattern(data.caloriePattern ?? null); // 객체이므로 null 기본값
+          setCaloriePattern(data.caloriePattern ?? null);
           setRecommendedExercise(data.recommendedExercise ?? '');
           setFoodSuggestion(data.foodSuggestion ?? '');
-
-          // ✅ 건강 가이드 배열 업데이트
           setHealthGuidance(data.healthGuidance ?? []);
         }
-
       } catch (err: any) {
-        if (err?.name === 'AbortError') return; // 요청 중단 시 무시
-        console.error('❌ fetch error:', err);
-        Alert.alert('오류', `리포트 데이터를 불러오지 못했습니다.\n${String(err?.message ?? err)}`);
+        if (err?.name !== 'AbortError') {
+          console.error('❌ fetch error:', err);
+          if (isMounted) {
+            setHasData(false);
+          }
+        }
       } finally {
         if (isMounted) setLoading(false);
       }
     };
 
-    fetchReport();
+    if (selectedWeek?.start) {
+      fetchReport(selectedWeek.start);
+    }
 
     return () => {
       isMounted = false;
       controller.abort();
     };
-  }, []);
+  }, [weekIndex, weeks]);
 
   const formatNumber = (n: number) => {
     try {
@@ -258,16 +251,15 @@ const ReportScreen = () => {
 
       <View style={styles.whiteSection}>
         <View style={styles.weekNav}>
-          <TouchableOpacity onPress={() => setWeekIndex((prev) => Math.max(1, prev - 1))}>
+          <TouchableOpacity onPress={() => setWeekIndex(prev => Math.max(1, prev - 1))}>
             <Text style={styles.weekArrow}>{'<'}</Text>
           </TouchableOpacity>
 
-          {/* API로 받은 라벨이 있으면 우선 사용 */}
           <Text style={styles.weekText}>
-            {weekLabelFromApi || weeks[weekIndex - 1]?.label || ''}
+            {weekLabelFromApi || selectedWeek?.label || ''}
           </Text>
 
-          <TouchableOpacity onPress={() => setWeekIndex((prev) => Math.min(weeks.length, prev + 1))}>
+          <TouchableOpacity onPress={() => setWeekIndex(prev => Math.min(weeks.length, prev + 1))}>
             <Text style={styles.weekArrow}>{'>'}</Text>
           </TouchableOpacity>
         </View>
@@ -275,6 +267,12 @@ const ReportScreen = () => {
         {loading ? (
           <View style={{ paddingVertical: 24 }}>
             <ActivityIndicator />
+          </View>
+        ) : !hasData ? (
+          <View style={{ alignItems: 'center', paddingVertical: 40 }}>
+            <Text style={{ fontSize: 16, color: '#9BA1A6', textAlign: 'center' }}>
+              아직 리포트 데이터가 없어요 😢{'\n'}이번 주 식단을 기록해보세요!
+            </Text>
           </View>
         ) : (
           <>
@@ -357,7 +355,7 @@ const styles = StyleSheet.create({
   totalText: {
     textAlign: 'center',
     fontSize: 12,
-    color: '#717171',
+    color: '#17171B',
     marginTop: 11,
   },
 });

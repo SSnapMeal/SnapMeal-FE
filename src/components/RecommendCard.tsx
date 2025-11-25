@@ -2,66 +2,67 @@ import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import InfoCardItem from './InfoCardItem';
 
+type Exercise = {
+  name: string;
+  calories: number;
+  duration: string;
+  repeat: number;
+  category: string;
+  emoji: string;
+};
+
+type Food = {
+  name: string;
+  calories: number;
+  benefit: string;
+  emoji: string;
+};
+
 type RecommendCardProps = {
   consumedCalories: number;
   remainingCalories: number;
-  exerciseSuggestion: string;
-  foodSuggestion: string;
+  exercises: {
+    name: string;
+    calories: number;
+    duration: string;
+    repeat: number;
+    category: string;
+    emoji: string;
+  }[];
+  foods: {
+    name: string;
+    calories: number;
+    benefit: string;
+    emoji: string;
+  }[];
 };
 
 const RecommendCard = ({
   consumedCalories,
   remainingCalories,
-  exerciseSuggestion,
-  foodSuggestion,
+  exercises,
+  foods,
 }: RecommendCardProps) => {
-  // 운동 카드 데이터
-  const exerciseData = [
-    {
-      title: '자전거',
-      description: exerciseSuggestion,
-      image: require('../assets/images/bike.png'),
-      badge: { text: '유산소', color: '#85DFAC' },
-    },
-    {
-      title: '테니스',
-      description: exerciseSuggestion,
-      image: require('../assets/images/tennis.png'),
-      badge: { text: '유산소', color: '#85DFAC' },
-    },
-    {
-      title: '테니스',
-      description: exerciseSuggestion,
-      image: require('../assets/images/tennis.png'),
-      badge: { text: '유산소', color: '#85DFAC' },
-    },
-  ];
-
-  // 음식 카드 데이터
-  const foodData = [
-    {
-      title: '샐러드',
-      description: foodSuggestion,
-      image: require('../assets/images/salad.png'),
-    },
-    {
-      title: '치즈',
-      description: foodSuggestion,
-      image: require('../assets/images/cheese.png'),
-    },
-  ];
-
   return (
     <View style={styles.container}>
       {/* 운동 추천 */}
-      <Text style={styles.sectionTitle}>{consumedCalories}kcal에 딱 맞는 운동</Text>
+      <Text style={styles.sectionTitle}>
+        {consumedCalories}kcal에 딱 맞는 운동
+      </Text>
       <ScrollView
         horizontal
         showsHorizontalScrollIndicator={false}
         style={styles.slider}
       >
-        {exerciseData.map((item, index) => (
-          <InfoCardItem key={index} {...item} variant="recommend" />
+        {exercises.map((item, index) => (
+          <InfoCardItem
+            key={`exercise-${index}`}
+            title={item.name}              // ✅ 운동 이름
+            description={`${item.duration} • ${item.calories}kcal`} // 설명: 시간 + 칼로리
+            emoji={item.emoji}             // ✅ 이미지 대신 이모지 사용
+            badge={{ text: item.category, color: '#85DFAC' }}
+            variant="recommend"
+          />
         ))}
       </ScrollView>
 
@@ -74,8 +75,14 @@ const RecommendCard = ({
         showsHorizontalScrollIndicator={false}
         style={styles.slider}
       >
-        {foodData.map((item, index) => (
-          <InfoCardItem key={index} {...item} variant="recommend" />
+        {foods.map((item, index) => (
+          <InfoCardItem
+            key={`food-${index}`}
+            title={item.name}           // ✅ 음식 이름
+            description={item.benefit}  // ✅ 설명 → benefit
+            emoji={item.emoji}          // ✅ 이미지 대신 이모지
+            variant="recommend"
+          />
         ))}
       </ScrollView>
     </View>

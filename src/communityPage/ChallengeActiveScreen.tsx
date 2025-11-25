@@ -1,58 +1,78 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
   StatusBar,
   View,
   Text,
-  TouchableOpacity,
   Image,
 } from 'react-native';
 import Header from '../components/Header';
-import DietCard from '../components/DietCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
+
+const mapStatusToState = (status: string): ChallengeState => {
+  switch (status) {
+    case 'PENDING':
+      return '참여전';
+    case 'IN_PROGRESS':
+      return '참여중';
+    case 'COMPLETED':
+    case 'SUCCESS':
+      return '성공';
+    case 'FAIL':
+    case 'FAILED':
+      return '실패';
+    default:
+      return '참여전';
+  }
+};
 
 const ChallengeActiveScreen = () => {
   const navigation = useNavigation<any>();
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // 참여중만 필터링
-  const activeChallenges = challenges.filter(c => c.state === '참여중');
-
   const fetchActiveChallenges = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) {
-        console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+        console.error('토큰 없음');
         return;
       }
 
-      const response = await axios.get('http://api.snapmeal.store/challenges/my', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        params: {
-          statuses: 'IN_PROGRESS', // 참여중 챌린지만 불러오기
-        },
-      });
+      const response = await axios.get(
+        'http://api.snapmeal.store/challenges/my',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          params: {
+            statuses: 'IN_PROGRESS',
+          },
+        }
+      );
 
-      console.log('🔥 참여중 챌린지 데이터:', response.data);
-      setChallenges(response.data); // 서버에서 받은 데이터 저장
+      setChallenges(response.data || []);
     } catch (error) {
-      console.error('❌ 챌린지 데이터 불러오기 실패:', error);
+      console.error('참여중 챌린지 불러오기 실패:', error);
     } finally {
       setLoading(false);
     }
   };
 
-  // 컴포넌트가 마운트되면 API 호출
   useEffect(() => {
     fetchActiveChallenges();
   }, []);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchActiveChallenges();
+    }, [])
+  );
 
   return (
     <ScrollView style={styles.container}>
@@ -60,13 +80,11 @@ const ChallengeActiveScreen = () => {
       <Header title="참여 중인 챌린지" backgroundColor="#FAFAFA" />
 
       <View style={styles.topRow}>
-        <Text style={styles.titleText}>
-          총 {challenges.length}개의 챌린지
-        </Text>
+        <Text style={styles.titleText}>총 {challenges.length}개의 챌린지</Text>
       </View>
 
       {loading ? (
-        <Text style={{ textAlign: 'center', marginTop: 20 }}>로딩중...</Text>
+        <Text style={styles.loading}>로딩중...</Text>
       ) : challenges.length === 0 ? (
         <View style={styles.emptyState}>
           <Image
@@ -80,30 +98,39 @@ const ChallengeActiveScreen = () => {
         </View>
       ) : (
         <View style={styles.cardList}>
-          {challenges.map(challenge => (
-            <TouchableOpacity
-              key={challenge.challengeId}
-              activeOpacity={0.8}
-              onPress={() =>
-                navigation.navigate('ChallengeDetail', {
-                  challengeId: challenge.challengeId,
-                  state: '참여중',
-                })
-              }
-            >
-              <DietCard
-                variant="challenge"
-                challengeState="참여중"
-                additionalMeal={{
-                  imageSource: require('../assets/images/coffee.png'), // 서버에서 이미지 URL 받으면 변경
-                  title: challenge.title,
-                  targetMenuName: challenge.targetMenuName,
-                  description: challenge.description,
-                  mealId: challenge.challengeId,
+          {challenges.map((challenge: any) => {
+            const state = mapStatusToState(challenge.status);
+
+            return (
+              <ChallengeCard
+                key={challenge.challengeId}
+                imageSource={require('../assets/images/challenge_background.png')}
+                title={challenge.title}
+                targetMenuName={challenge.targetMenuName}
+                description={challenge.description}
+                state={state}
+                onPress={() => {
+                  console.log(
+                    '[ChallengeActive] 카드 눌림 → ChallengeDetail 이동',
+                    challenge.challengeId
+                  );
+                  navigation.navigate('ChallengeDetail', {
+                    challenge: {
+                      challengeId: challenge.challengeId,
+                      title: challenge.title,
+                      description: challenge.description,
+                      targetMenuName: challenge.targetMenuName,
+                      status: challenge.status,
+                      startDate: challenge.startDate,
+                      endDate: challenge.endDate,
+                      introduction: challenge.introduction ?? {},
+                      stamps: Array.isArray(challenge.stamps) ? challenge.stamps : [],
+                    },
+                  });
                 }}
               />
-            </TouchableOpacity>
-          ))}
+            );
+          })}
         </View>
       )}
     </ScrollView>
@@ -118,8 +145,14 @@ const styles = StyleSheet.create({
     paddingHorizontal: 22,
   },
   titleText: { fontSize: 18, fontWeight: '700', marginLeft: 2, marginTop: 41 },
+  loading: {
+    textAlign: 'center',
+    marginTop: 20,
+    color: '#777',
+  },
   cardList: {
     marginTop: 20,
+    marginBottom: 40,
   },
   emptyState: {
     justifyContent: 'center',

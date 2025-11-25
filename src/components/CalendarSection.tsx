@@ -12,6 +12,13 @@ interface CalendarProps {
   marked: { [key: string]: string }; // dateStr → color
 }
 
+// 상태별 색상
+const STATUS_COLORS = {
+  over: '#FA9E9E',    // 과다
+  normal: '#80DAA7',  // 적정
+  lack: '#FED77F',    // 부족
+};
+
 const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpanded, marked }: CalendarProps) => {
   const currentMonth = selectedDate.startOf('month');
   const daysInMonth = currentMonth.daysInMonth();
@@ -61,7 +68,9 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
         >
           <View style={styles.cellInner}>
             {isSelected && <View style={styles.selectedBox} />}
-            {bgColor && <View style={[styles.markCircle, { backgroundColor: bgColor }]} />}
+            {typeof bgColor === 'string' && bgColor.length > 0 && (
+              <View style={[styles.markCircle, { backgroundColor: bgColor }]} />
+            )}
             <Text style={styles.cellText}>{d}</Text>
           </View>
         </TouchableOpacity>
@@ -86,7 +95,9 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
             <TouchableOpacity key={dateStr} style={styles.cell} onPress={() => setSelectedDate(date)}>
               <View style={styles.cellInner}>
                 {isSelected && <View style={styles.selectedBox} />}
-                {bgColor && <View style={[styles.markCircle, { backgroundColor: bgColor }]} />}
+                {typeof bgColor === 'string' && bgColor.length > 0 && (
+                  <View style={[styles.markCircle, { backgroundColor: bgColor }]} />
+                )}
                 <Text style={styles.cellText}>{date.date()}</Text>
               </View>
             </TouchableOpacity>
