@@ -25,9 +25,9 @@ const getColors = (s: ChallengeState) => {
   switch (s) {
     case '참여전': return { text: '#7A7A7A', bg: '#E9E9E9' };
     case '참여중': return { text: '#38B000', bg: '#EDF8E8' };
-    case '성공':   return { text: '#EDF8E8', bg: '#38B000' };
-    case '실패':   return { text: '#E67373', bg: '#F8E8E8' };
-    default:       return { text: '#7A7A7A', bg: '#E9E9E9' };
+    case '성공': return { text: '#EDF8E8', bg: '#38B000' };
+    case '실패': return { text: '#E67373', bg: '#F8E8E8' };
+    default: return { text: '#7A7A7A', bg: '#E9E9E9' };
   }
 };
 
@@ -53,8 +53,16 @@ const ChallengeCard: React.FC<Props> = ({
         <View style={styles.body}>
           <Text style={styles.title}>{title}</Text>
 
-          {!!targetMenuName && <Text style={styles.bullet}>•  {targetMenuName}</Text>}
-          {!!description && <Text style={styles.bullet}>•  {description}</Text>}
+          {!!targetMenuName && <Text
+            style={styles.bullet}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >•  {targetMenuName}</Text>}
+          {!!description && <Text
+            style={styles.bullet}
+            numberOfLines={1}
+            ellipsizeMode="tail"
+          >•  {description}</Text>}
 
           <View
             style={[
@@ -94,7 +102,7 @@ const styles = StyleSheet.create({
     flex: 1,
     paddingHorizontal: 16,
     paddingVertical: 14,
-    position: 'relative',  // ✅ 배지 absolute 기준
+    position: 'relative',
   },
   title: {
     fontSize: 14,
@@ -106,6 +114,7 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: '#17171B',
     lineHeight: 18,
+    width: 230,
   },
   badgeAbsolute: {
     position: 'absolute',

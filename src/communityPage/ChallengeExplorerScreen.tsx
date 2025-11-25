@@ -1,27 +1,26 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
   StatusBar,
   View,
   Text,
-  TouchableOpacity,
 } from 'react-native';
 import Header from '../components/Header';
 import TabSwitcher from '../components/TabSwitcher';
-import DietCard from '../components/DietCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
 
-// status → state 매핑 함수
-const mapStatusToState = (status: string) => {
+const mapStatusToState = (status: string): ChallengeState => {
   switch (status) {
     case 'PENDING':
       return '참여전';
     case 'IN_PROGRESS':
       return '참여중';
     case 'COMPLETED':
+    case 'SUCCESS':
       return '성공';
     default:
       return '참여전';
@@ -34,42 +33,46 @@ const ChallengeExplorerScreen = () => {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
 
-  // 서버에서 챌린지 데이터 가져오기
-  useEffect(() => {
-    const fetchChallenges = async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
+  const fetchChallenges = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        if (!token) {
-          console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
-          return;
-        }
-
-        const response = await axios.post(
-          'http://api.snapmeal.store/challenges/weekly/generate',
-          {},
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-          }
-        );
-
-        console.log('🔥 챌린지 데이터:', response.data);
-        setChallenges(response.data);
-      } catch (error) {
-        console.error('❌ 챌린지 데이터 불러오기 실패:', error);
-      } finally {
-        setLoading(false);
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+        setChallenges([]);
+        return;
       }
-    };
 
-    fetchChallenges();
+      const response = await axios.post(
+        'http://api.snapmeal.store/challenges/weekly/generate',
+        {},
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+        }
+      );
+
+      setChallenges(response.data);
+    } catch (error) {
+      console.error('❌ 챌린지 데이터 불러오기 실패:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
 
+  useEffect(() => {
+    fetchChallenges();
+  }, [fetchChallenges]);
 
-  // 탭에 따라 데이터 필터링
+  useFocusEffect(
+    useCallback(() => {
+      fetchChallenges();
+    }, [fetchChallenges])
+  );
+
   const filteredChallenges =
     selectedTab === '전체'
       ? challenges.filter(c => {
@@ -83,7 +86,6 @@ const ChallengeExplorerScreen = () => {
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <Header title="전체 챌린지" backgroundColor="#FAFAFA" />
 
-      {/* 상단 탭 영역 */}
       <View style={styles.tabRow}>
         <Text style={styles.tabTitle}>
           총 {filteredChallenges.length}개의 챌린지
@@ -95,7 +97,6 @@ const ChallengeExplorerScreen = () => {
         />
       </View>
 
-      {/* 카드 리스트 */}
       <View style={styles.cardList}>
         {loading ? (
           <Text style={styles.loadingText}>로딩중...</Text>
@@ -103,27 +104,19 @@ const ChallengeExplorerScreen = () => {
           <Text style={styles.emptyText}>챌린지가 없습니다.</Text>
         ) : (
           filteredChallenges.map(challenge => (
-            <TouchableOpacity
+            <ChallengeCard
               key={challenge.challengeId}
-              activeOpacity={0.8}
+              imageSource={require('../assets/images/challenge_background.png')}
+              title={challenge.title}
+              targetMenuName={challenge.targetMenuName}
+              description={challenge.description}
+              state={mapStatusToState(challenge.status)}
               onPress={() =>
                 navigation.navigate('ChallengeDetail', {
                   challenge: challenge,
                 })
               }
-            >
-              <DietCard
-                variant="challenge"
-                challengeState={mapStatusToState(challenge.status)}
-                additionalMeal={{
-                  imageSource: require('../assets/images/coffee.png'),
-                  title: challenge.title,
-                  targetMenuName: challenge.targetMenuName, // 🔹 추가
-                  description: challenge.description,       // 🔹 추가
-                  mealId: challenge.challengeId,
-                }}
-              />
-            </TouchableOpacity>
+            />
           ))
         )}
       </View>
@@ -141,6 +134,7 @@ const styles = StyleSheet.create({
   tabTitle: { fontSize: 18, fontWeight: '700', marginLeft: 2, marginTop: 41 },
   cardList: {
     marginTop: 20,
+    paddingBottom: 20,
   },
   loadingText: {
     textAlign: 'center',

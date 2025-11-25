@@ -13,6 +13,7 @@ import NutrientBarChart from '../components/NutrientBarChart';
 import SaveNoticeBox from '../components/SaveNoticeBox';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { ActivityIndicator } from 'react-native';
 
 type Params = {
   imageUri: string;
@@ -28,6 +29,7 @@ const PhotoPreviewScreen = () => {
   const route = useRoute<RouteProp<{ params: Params }, 'params'>>();
   const { imageUri, classNames, nutritionId: receivedNutritionId } = route.params;
   const imageId = Array.isArray(route.params.imageId) ? route.params.imageId[0] : route.params.imageId;
+  const [isLoading, setIsLoading] = useState(true);
 
   const [nutrients, setNutrients] = useState({
     calories: 0,
@@ -64,7 +66,6 @@ const PhotoPreviewScreen = () => {
       { key: 2, grams: nutrients.carbs, color: '#FFD794', label: '탄수화물' },
       { key: 3, grams: nutrients.sugar, color: '#FFC5C6', label: '당' },
       { key: 4, grams: nutrients.fat, color: '#FFF7C2', label: '지방' },
-      { key: 5, grams: etc, color: '#C9D8F0', label: '기타' },
     ];
   }, [nutrients]);
 
@@ -115,6 +116,7 @@ const PhotoPreviewScreen = () => {
   useEffect(() => {
     const fetchNutritionData = async () => {
       try {
+        setIsLoading(true); // ✅ 분석 시작 시 로딩 표시
         const token = await AsyncStorage.getItem('accessToken');
 
         console.log('🍳 foodNames:', foodNames);
@@ -144,7 +146,6 @@ const PhotoPreviewScreen = () => {
 
         if (response.data?.result) {
           const nutrition = response.data.result;
-
           console.log('📡 nutrition result:', nutrition);
 
           setNutrients({
@@ -161,13 +162,18 @@ const PhotoPreviewScreen = () => {
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
-          console.error('❌ API 요청 실패:',
-            'status:', error.response?.status,
-            'data:', error.response?.data
+          console.error(
+            '❌ API 요청 실패:',
+            'status:',
+            error.response?.status,
+            'data:',
+            error.response?.data
           );
         } else {
           console.error('❌ 알 수 없는 오류:', error);
         }
+      } finally {
+        setIsLoading(false); // ✅ 완료 후 로딩 해제
       }
     };
 
@@ -199,72 +205,86 @@ const PhotoPreviewScreen = () => {
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <Header title="분석 결과" backgroundColor="#FAFAFA" />
 
-      <ScrollView contentContainerStyle={styles.scrollContainer}>
-        <Text style={styles.title}>
-          {foodTags}
-          <Text style={styles.kcal}> #{nutrients.calories}kcal</Text>
-        </Text>
+      {/* ✅ 로딩 아닐 때만 본문 렌더 */}
+      {!isLoading && (
+        <ScrollView contentContainerStyle={styles.scrollContainer}>
+          <Text style={styles.title}>
+            {foodTags}
+            <Text style={styles.kcal}> #{nutrients.calories}kcal</Text>
+          </Text>
 
-        <View
-          style={styles.card}
-          onLayout={(e) => {
-            const { width } = e.nativeEvent.layout;
-            setCardWidth(width);
-          }}
-        >
-          <ScrollView
-            horizontal
-            pagingEnabled
-            showsHorizontalScrollIndicator={false}
-            onScroll={handleScroll}
-            scrollEventThrottle={16}
-            ref={scrollRef}
+          <View
+            style={styles.card}
+            onLayout={(e) => {
+              const { width } = e.nativeEvent.layout;
+              setCardWidth(width);
+            }}
           >
-            <View style={{ width: cardWidth, alignItems: 'center', justifyContent: 'center' }}>
-              {/* <PieChart
-                data={pieData}
-                width={190}
-                height={190}
-                accessor="population"
-                backgroundColor="transparent"
-                chartConfig={{
-                  color: () => '#000',
-                }}
-                hasLegend={false}
-                paddingLeft="10"
-              /> */}
+            <ScrollView
+              horizontal
+              pagingEnabled
+              snapToInterval={cardWidth}
+              decelerationRate="fast"
+              snapToAlignment="start"
+              showsHorizontalScrollIndicator={false}
+              onScroll={handleScroll}
+              scrollEventThrottle={16}
+              overScrollMode="never"
+              ref={scrollRef}
+              contentContainerStyle={{ paddingHorizontal: 0 }}
+            >
+              <View style={{ width: cardWidth, alignItems: 'center', justifyContent: 'center' }}>
+                <PieChart
+                  data={pieData}
+                  width={cardWidth}
+                  height={190}
+                  accessor="population"
+                  backgroundColor="transparent"
+                  chartConfig={{ color: () => '#000' }}
+                  hasLegend={false}
+                  paddingLeft="83"
+                />
+              </View>
+
+              <View style={{ width: cardWidth }}>
+                <NutrientBarChart data={data} customStyle={{ width: '80%', marginTop: 40 }} />
+              </View>
+            </ScrollView>
+
+            <View style={styles.pagination}>
+              <View style={[styles.dot, activeIndex === 0 && styles.activeDot]} />
+              <View style={[styles.dot, activeIndex === 1 && styles.activeDot]} />
             </View>
 
-            <View style={{ width: cardWidth }}>
-              <NutrientBarChart data={data} customStyle={{ width: '80%', marginTop: 40 }} />
+            <View style={{ paddingHorizontal: 27, width: '100%' }}>
+              <NutrientList data={data} />
             </View>
-          </ScrollView>
-
-          <View style={styles.pagination}>
-            <View style={[styles.dot, activeIndex === 0 && styles.activeDot]} />
-            <View style={[styles.dot, activeIndex === 1 && styles.activeDot]} />
           </View>
 
-          <View style={{ paddingHorizontal: 27, width: '100%' }}>
-            <NutrientList data={data} />
+          <Text style={styles.sectionHeader}>영양 정보</Text>
+
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
+            <Text style={styles.summaryKcal}>{nutrients.calories}/2000kcal</Text>
           </View>
+
+          <View style={styles.grid}>
+            {details.map((item, index) => (
+              <InfoCardItem key={index} {...item} variant="detail" />
+            ))}
+          </View>
+
+          <SaveNoticeBox onSave={handleSave} />
+        </ScrollView>
+      )}
+
+      {/* ✅ 로딩 오버레이: 화면 전면 차단 + 스피너 */}
+      {isLoading && (
+        <View style={styles.loadingOverlay} pointerEvents="auto">
+          <ActivityIndicator size="large" />
+          <Text style={styles.loadingText}>분석 중...</Text>
         </View>
-
-        <Text style={styles.sectionHeader}>영양 정보</Text>
-
-        <View style={styles.summaryCard}>
-          <Text style={styles.summaryTitle}>전체적으로 균형잡힌 식단이에요!</Text>
-          <Text style={styles.summaryKcal}>{nutrients.calories}/2000kcal</Text>
-        </View>
-
-        <View style={styles.grid}>
-          {details.map((item, index) => (
-            <InfoCardItem key={index} {...item} variant="detail" />
-          ))}
-        </View>
-
-        <SaveNoticeBox onSave={handleSave} />
-      </ScrollView>
+      )}
     </View>
   );
 };
@@ -340,6 +360,20 @@ const styles = StyleSheet.create({
     flexWrap: 'wrap',
     justifyContent: 'space-between',
     paddingHorizontal: 28,
+  },
+  loadingOverlay: {
+    position: 'absolute',
+    top: 0, left: 0, right: 0, bottom: 0,
+    backgroundColor: 'rgba(255,255,255,0.6)', // 살짝 흐림
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  loadingText: {
+    marginTop: 10,
+    fontSize: 14,
+    fontWeight: '600',
+    color: '#222',
+    textAlign: 'center',
   },
 });
 

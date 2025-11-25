@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Image,
@@ -10,7 +10,7 @@ import {
 import { ScrollView } from 'react-native-gesture-handler';
 import Navigation from '../components/Navigation';
 import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
-import { useNavigation } from '@react-navigation/native';
+import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
@@ -20,7 +20,6 @@ const CommunityScreen = () => {
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
 
-  // status → 앱에서 사용할 상태값으로 변환
   const mapStatusToState = (status: string) => {
     switch (status) {
       case 'PENDING':
@@ -34,40 +33,49 @@ const CommunityScreen = () => {
     }
   };
 
-  // 내 챌린지 데이터 가져오기
-  useEffect(() => {
-    const fetchMyChallenges = async () => {
-      try {
-        const token = await AsyncStorage.getItem('accessToken');
-        if (!token) {
-          console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
-          return;
-        }
+const fetchMyChallenges = useCallback(async () => {
+    try {
+      setLoading(true);
 
-        const response = await axios.get(
-          'http://api.snapmeal.store/challenges/my',
-          {
-            headers: {
-              Authorization: `Bearer ${token}`,
-              'Content-Type': 'application/json',
-            },
-            params: {
-              statuses: 'IN_PROGRESS',
-            },
-          }
-        );
-
-        console.log('🔥 내 챌린지 데이터:', response.data);
-        setChallenges(response.data);
-      } catch (error) {
-        console.error('❌ 챌린지 데이터 불러오기 실패:', error);
-      } finally {
-        setLoading(false);
+      const token = await AsyncStorage.getItem('accessToken');
+      if (!token) {
+        console.error('❌ 토큰이 없습니다. 로그인 후 다시 시도하세요.');
+        setChallenges([]);
+        return;
       }
-    };
 
-    fetchMyChallenges();
+      const response = await axios.get(
+        'http://api.snapmeal.store/challenges/my',
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            'Content-Type': 'application/json',
+          },
+          params: {
+            statuses: 'IN_PROGRESS',
+          },
+        }
+      );
+
+      console.log('🔥 내 챌린지 데이터:', response.data);
+      setChallenges(response.data);
+    } catch (error) {
+      console.error('❌ 챌린지 데이터 불러오기 실패:', error);
+    } finally {
+      setLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchMyChallenges();
+  }, [fetchMyChallenges]);
+
+  useFocusEffect(
+    useCallback(() => {
+      fetchMyChallenges();
+    }, [fetchMyChallenges])
+  );
+
 
   return (
     <>

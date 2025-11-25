@@ -11,6 +11,7 @@ import ProfileSettingScreen from './startPage/ProfileSettingScreen';
 import SignupCompleteScreen from './startPage/SignupCompleteScreen';
 
 import HomeScreen from './mainPage/HomeScreen';
+
 import AnalysisScreen from './analysisPage/AnalysisScreen';
 import ReportScreen from './analysisPage/ReportScreen';
 import ImageCheckScreen from './analysisPage/ImageCheckScreen';
@@ -31,6 +32,7 @@ import ProfileEditScreen from './myPage/ProfileEditScreen';
 import EditGoalScreen from './myPage/EditGoalScreen';
 import EditIdNickScreen from './myPage/EditIdNickScreen';
 import EditPassScreen from './myPage/EditPassScreen';
+
 import { RootStackParamList } from './types/navigation';
 
 const Stack = createNativeStackNavigator<RootStackParamList>();
@@ -40,13 +42,21 @@ const App = () => {
     <GestureHandlerRootView style={{ flex: 1 }}>
       <SafeAreaProvider>
         <NavigationContainer>
-          <Stack.Navigator screenOptions={{ headerShown: false }}>
+          <Stack.Navigator
+            screenOptions={{ headerShown: false }}
+            initialRouteName="Welcome"
+          >
+            {/* 시작 플로우 */}
             <Stack.Screen name="Welcome" component={WelcomeScreen} />
             <Stack.Screen name="FindAccount" component={FindAccountScreen} />
             <Stack.Screen name="SignUp" component={SignUpScreen} />
             <Stack.Screen name="ProfileSetting" component={ProfileSettingScreen} />
             <Stack.Screen name="SignupComplete" component={SignupCompleteScreen} />
+
+            {/* 메인 */}
             <Stack.Screen name="Home" component={HomeScreen} />
+
+            {/* 분석/식단 */}
             <Stack.Screen name="Analysis" component={AnalysisScreen} />
             <Stack.Screen name="Report" component={ReportScreen} />
             <Stack.Screen name="ImageCheck" component={ImageCheckScreen} />
@@ -54,13 +64,26 @@ const App = () => {
             <Stack.Screen name="MealRecord" component={MealRecordScreen} />
             <Stack.Screen name="FoodSearch" component={FoodSearchScreen} />
             <Stack.Screen name="MealDetail" component={MealDetailScreen} />
-            <Stack.Screen name="MyPage" component={MyPageScreen} />
-            <Stack.Screen name="Notification" component={NotificationScreen} />
+
+            {/* 커뮤니티 / 챌린지 */}
             <Stack.Screen name="Community" component={CommunityScreen} />
             <Stack.Screen name="ChallengeExplorer" component={ChallengeExplorerScreen} />
-            <Stack.Screen name="ChallengeDetail" component={ChallengeDetailScreen} />
+            <Stack.Screen
+                name="ChallengeDetail"
+                component={ChallengeDetailScreen}
+                options={{
+                  presentation: 'transparentModal',
+                  animation: 'none',
+                  headerShown: false,
+                  contentStyle: { backgroundColor: 'transparent' },
+                }}
+            />
             <Stack.Screen name="ChallengeActive" component={ChallengeActiveScreen} />
             <Stack.Screen name="ChallengeDone" component={ChallengeDoneScreen} />
+
+            {/* 마이페이지 */}
+            <Stack.Screen name="MyPage" component={MyPageScreen} />
+            <Stack.Screen name="Notification" component={NotificationScreen} />
             <Stack.Screen name="ProfileEdit" component={ProfileEditScreen} />
             <Stack.Screen name="EditGoal" component={EditGoalScreen} />
             <Stack.Screen name="EditIdNick" component={EditIdNickScreen} />

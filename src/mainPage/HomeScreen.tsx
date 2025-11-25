@@ -60,6 +60,7 @@ const cameraOptions: CameraOptions = {
 const HomeScreen = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
   const userName = '스냅';
+  const [meals, setMeals] = useState<Meal[]>([]);
 
   // ✅ API에서 가져온 합계 값 저장
   const [nutritionData, setNutritionData] = useState({
@@ -77,6 +78,14 @@ const HomeScreen = () => {
         const token = await AsyncStorage.getItem('accessToken');
         if (!token) {
           console.error('⚠️ 토큰이 없습니다. 로그인 확인 필요!');
+          setMeals([]);
+          setNutritionData({
+            totalCalories: 0,
+            totalProtein: 0,
+            totalCarbs: 0,
+            totalSugar: 0,
+            totalFat: 0,
+          });
           return;
         }
 
@@ -84,23 +93,33 @@ const HomeScreen = () => {
         const today = dayjs().format('YYYY-MM-DD');
         console.log('📅 오늘 날짜:', today);
 
-        // /meals API GET 요청
-        const response = await axios.get('http://api.snapmeal.store/meals', {
+        // ✅ /meals/date API GET 요청 (하루 단위)
+        const response = await axios.get('http://api.snapmeal.store/meals/date', {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          params: { date: today }, // 날짜 파라미터 전달
+          params: { date: today },
         });
 
         console.log('🍽 서버 응답:', response.data);
 
-        if (response.data.isSuccess && Array.isArray(response.data.result)) {
-          const meals = response.data.result;
+        // 결과를 배열 형태로 안전하게 정규화
+        const raw = response.data?.result;
+        const mealsData: Meal[] = Array.isArray(raw) ? raw : raw ? [raw] : [];
 
-          // ✅ 서버에서 받은 값 합계 계산
-          const totals = meals.reduce(
-            (acc: TotalsType, meal: Meal) => {
+        if (response.data?.isSuccess && mealsData.length > 0) {
+          // (선택) 아침-점심-저녁 순으로 정렬
+          const order: Record<string, number> = { BREAKFAST: 0, LUNCH: 1, DINNER: 2 };
+          mealsData.sort((a, b) => {
+            const byType = (order[a.mealType] ?? 99) - (order[b.mealType] ?? 99);
+            if (byType !== 0) return byType;
+            return dayjs(a.mealDate).valueOf() - dayjs(b.mealDate).valueOf();
+          });
+
+          // ✅ 합계 계산
+          const totals = mealsData.reduce<TotalsType>(
+            (acc, meal) => {
               acc.totalCalories += meal.calories || 0;
               acc.totalProtein += meal.protein || 0;
               acc.totalCarbs += meal.carbs || 0;
@@ -114,13 +133,15 @@ const HomeScreen = () => {
               totalCarbs: 0,
               totalSugar: 0,
               totalFat: 0,
-            } as TotalsType
+            }
           );
 
           console.log('✅ 오늘 섭취 합계:', totals);
           setNutritionData(totals);
+          setMeals(mealsData);
         } else {
           console.warn('⚠️ 오늘 날짜에 해당하는 식사가 없습니다.');
+          setMeals([]);
           setNutritionData({
             totalCalories: 0,
             totalProtein: 0,
@@ -129,8 +150,16 @@ const HomeScreen = () => {
             totalFat: 0,
           });
         }
-      } catch (error) {
-        console.error('❌ meals API 요청 실패:', error);
+      } catch (error: any) {
+        console.error('❌ meals/date API 요청 실패:', error?.response?.status, error?.response?.data || error);
+        setMeals([]);
+        setNutritionData({
+          totalCalories: 0,
+          totalProtein: 0,
+          totalCarbs: 0,
+          totalSugar: 0,
+          totalFat: 0,
+        });
       }
     };
 
@@ -150,15 +179,6 @@ const HomeScreen = () => {
     { label: '탄수화물', value: nutritionData.totalCarbs, color: getColorByStatus(nutritionData.totalCarbs) },
     { label: '당', value: nutritionData.totalSugar, color: getColorByStatus(nutritionData.totalSugar) },
     { label: '지방', value: nutritionData.totalFat, color: getColorByStatus(nutritionData.totalFat) },
-    {
-      label: '기타',
-      value: Math.max(
-        nutritionData.totalCalories -
-        (nutritionData.totalProtein + nutritionData.totalCarbs + nutritionData.totalSugar + nutritionData.totalFat),
-        0 // 음수 방지
-      ),
-      color: '#C0C0C0'
-    },
   ];
 
   const handlePress = () => {
@@ -169,11 +189,30 @@ const HomeScreen = () => {
         console.error('카메라 오류:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
         const imageUri = response.assets[0].uri;
-        if (imageUri) {
-          navigation.navigate('MealRecord', { imageUri, rawNutrients: [] });
-        }
+        // if (imageUri) {
+        //   navigation.navigate('MealRecord', { imageUri, rawNutrients: [] });
+        // }
       }
     });
+  };
+
+  // 컴포넌트 안에 헬퍼 추가
+  const getMealColorByKcal = (kcal: number) => {
+    if (kcal > 700) return '#FFA3A3'; // 과다
+    if (kcal >= 400) return '#85DFAC'; // 적정
+    return '#FED77F'; // 부족
+  };
+
+  // 상위 2개 영양소 문자열 (단위 g 가정)
+  const getTop2NutrStr = (m: Meal) => {
+    const pairs: Array<{ key: keyof Meal; label: string; val: number }> = [
+      { key: 'protein', label: '단백질', val: m.protein || 0 },
+      { key: 'carbs', label: '탄수화물', val: m.carbs || 0 },
+      { key: 'sugar', label: '당', val: m.sugar || 0 },
+      { key: 'fat', label: '지방', val: m.fat || 0 },
+    ];
+    const top2 = pairs.sort((a, b) => b.val - a.val).slice(0, 2);
+    return `${top2[0].label} ${top2[0].val}g, ${top2[1].label} ${top2[1].val}g`;
   };
 
   return (
@@ -208,10 +247,28 @@ const HomeScreen = () => {
             {/* 오늘 식사 기록 */}
             <View style={styles.mealSection}>
               <Text style={styles.sectionTitle}>오늘의 식사 기록</Text>
+
               <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                <MealCard backgroundColor="#FED77F" title="아침" kcal="360kcal" nutrients="단백질 12g, 탄수화물 30g, ..." />
-                <MealCard backgroundColor="#85DFAC" title="점심" kcal="360kcal" nutrients="단백질 12g, 탄수화물 30g, ..." />
-                <MealCard backgroundColor="#FFA3A3" title="저녁" kcal="360kcal" nutrients="단백질 12g, 탄수화물 30g, ..." />
+                {meals.length === 0 ? (
+                  <MealCard
+                    backgroundColor="#C0C0C0"
+                    title="기록 없음"
+                    kcal="0kcal"
+                    nutrients="—"
+                  />
+                ) : (
+                  meals.map((m, idx) => (
+                    <MealCard
+                      key={m.mealId}
+                      backgroundColor={getMealColorByKcal(m.calories || 0)}
+                      title={m.className || '식사'}
+                      kcal={`${m.calories || 0}kcal`}
+                      nutrients={getTop2NutrStr(m)}
+                      // 👇 마지막 카드일 경우 오른쪽 마진 추가
+                      style={idx === meals.length - 1 ? { marginRight: 16 } : undefined}
+                    />
+                  ))
+                )}
               </ScrollView>
             </View>
 
@@ -324,7 +381,6 @@ const styles = StyleSheet.create({
   },
   mealSection: {
     marginTop: 100,
-    paddingLeft: 27,
   },
   sectionTitle: {
     fontSize: 16,
@@ -332,6 +388,7 @@ const styles = StyleSheet.create({
     color: '#10152C',
     marginBottom: 16,
     marginLeft: 6,
+    paddingLeft: 27,
   },
 });
 

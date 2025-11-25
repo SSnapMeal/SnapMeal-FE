@@ -6,6 +6,7 @@ interface MealCardProps {
   title?: string;
   kcal?: string;
   nutrients?: string;
+  style?: object;
 }
 
 const MealCard: React.FC<MealCardProps> = ({
@@ -13,9 +14,10 @@ const MealCard: React.FC<MealCardProps> = ({
   title = '',
   kcal = '',
   nutrients = '',
+  style,
 }) => {
   return (
-    <View style={[styles.card, { backgroundColor }]}> 
+    <View style={[styles.card, { backgroundColor }, style]}> 
       {title !== '' && <Text style={styles.title}>{title}</Text>}
       {kcal !== '' && <Text style={styles.kcal}>{kcal}</Text>}
       {nutrients !== '' && <Text style={styles.nutrients}>{nutrients}</Text>}
@@ -28,7 +30,7 @@ const styles = StyleSheet.create({
     width: 160,
     height: 115,
     borderRadius: 20,
-    marginRight: 16,
+    marginLeft: 16,
     paddingLeft: 20,
     elevation: 1,
     justifyContent: 'center',

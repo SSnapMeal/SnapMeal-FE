@@ -95,21 +95,23 @@ const AnalysisScreen = () => {
     부족: '#FBE19A',
   };
 
-  const statusMarked: Record<StatusType, string[]> = {
-    과다: ['2025-04-01', '2025-04-04'],
-    적정: ['2025-04-02', '2025-04-10', '2025-05-06'],
-    부족: ['2025-04-03', '2025-04-15'],
+  // 기준 칼로리에 따라 상태 판단
+  const getStatusByCalories = (calories: number): StatusType => {
+    if (calories > 2000) return '과다';
+    if (calories < 1400) return '부족';
+    return '적정';
+  };
+
+  // 🔹 상태별 색상
+  const statusColorMap: Record<StatusType, string> = {
+    과다: '#FA9E9E',
+    적정: '#80DAA7',
+    부족: '#FED77F',
   };
 
   const [isLoading, setIsLoading] = useState(false);
   const isToday = selectedDate.isSame(dayjs(), 'day');
-
-  const marked: { [key: string]: string } = {};
-  (Object.keys(statusMarked) as StatusType[]).forEach((status) => {
-    statusMarked[status].forEach(date => {
-      marked[date] = statusColors[status];
-    });
-  });
+  const [marked, setMarked] = useState<{ [key: string]: string }>({});
 
   const finalMeal: CardData | undefined =
     serverMeal ??
@@ -122,24 +124,28 @@ const AnalysisScreen = () => {
       mealId: Number((receivedMeal as any).mealId ?? -1), // ✅ 기본값(-1)
     });
 
-  // 🔥 서버에서 식단 가져오는 부분 (className → title, topNutrients 상위 2개 적용)
+  // 서버에서 식단 가져오는 부분 (className → title, topNutrients 상위 2개 적용)
   useEffect(() => {
+    const controller = new AbortController();
+
     const fetchMeal = async () => {
       try {
         const token = await AsyncStorage.getItem('accessToken');
+        if (!token) {
+          console.warn('⚠️ 토큰 없음: 로그인 필요');
+          return;
+        }
 
-        // ✅ 선택한 날짜를 YYYY-MM-DD로 변환
-        const selectedDay = selectedDate.format('YYYY-MM-DD');
-        console.log('🌐 API 요청 날짜:', selectedDay);
+        const selectedDay = selectedDate.startOf('day').format('YYYY-MM-DD');
+        console.log('🌐 GET http://api.snapmeal.store/meals/date', { date: selectedDay });
 
-        const response = await axios.get('http://api.snapmeal.store/meals', {
+        const response = await axios.get('http://api.snapmeal.store/meals/date', {
           headers: {
             Authorization: `Bearer ${token}`,
             'Content-Type': 'application/json',
           },
-          params: {
-            date: selectedDay, // <-- 날짜를 쿼리 파라미터로 전달
-          },
+          params: { date: selectedDay },
+          signal: controller.signal as any,
         });
 
         console.log('📡 서버 응답 데이터:', response.data);
@@ -168,13 +174,18 @@ const AnalysisScreen = () => {
           .filter(Boolean) as CardData[];
 
         setServerMeals(meals);
-      } catch (error) {
-        console.error('❌ 식단 데이터 불러오기 실패:', error);
+      } catch (error: any) {
+        if (axios.isCancel?.(error) || error?.code === 'ERR_CANCELED') {
+          console.log('🛑 요청 취소됨');
+          return;
+        }
+        console.error('❌ 식단 데이터 불러오기 실패:', error?.response?.data || error);
       }
     };
 
     fetchMeal();
-  }, [selectedDate]); // ✅ 날짜가 바뀔 때마다 API 요청
+    return () => controller.abort();
+  }, [selectedDate]);
 
   useEffect(() => {
     const fetchRecommendation = async () => {
@@ -217,6 +228,46 @@ const AnalysisScreen = () => {
     };
 
     fetchRecommendation();
+  }, []);
+
+  // 전체 식단 데이터 받아와서 날짜별 총칼로리 → 상태별 색상 변환
+  useEffect(() => {
+    const fetchAllMeals = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) return;
+
+        const response = await axios.get('http://api.snapmeal.store/meals', {
+          headers: { Authorization: `Bearer ${token}` },
+        });
+
+        const result = response.data?.result || [];
+        console.log('📡 전체 식단 응답:', result);
+
+        // 🔹 날짜별 총 칼로리 계산
+        const caloriesByDate: Record<string, number> = {};
+        result.forEach((meal: any) => {
+          const dateKey = dayjs(meal.mealDate).format('YYYY-MM-DD');
+          caloriesByDate[dateKey] = (caloriesByDate[dateKey] || 0) + (meal.calories ?? 0);
+        });
+
+        console.log('🔥 날짜별 총칼로리:', caloriesByDate);
+
+        // 🔹 날짜별 색상 매핑
+        const markedResult: Record<string, string> = {};
+        Object.entries(caloriesByDate).forEach(([date, totalKcal]) => {
+          const status = getStatusByCalories(totalKcal);
+          markedResult[date] = statusColorMap[status];
+        });
+
+        console.log('🎨 markedResult:', markedResult);
+        setMarked(markedResult); // ✅ 캘린더에 전달될 상태 저장
+      } catch (error) {
+        console.error('❌ 전체 식단 불러오기 실패:', error);
+      }
+    };
+
+    fetchAllMeals();
   }, []);
 
   const requestCameraPermission = async () => {
@@ -351,14 +402,23 @@ const AnalysisScreen = () => {
     <>
       <StatusBar backgroundColor="#FFFFFF" barStyle="dark-content" />
       <SafeAreaView style={styles.container}>
+        <View collapsable={false} pointerEvents="box-none" style={styles.headerAction}>
+          <TouchableOpacity
+            onPress={() => navigation.navigate('Report')}
+            style={styles.reportBtn}
+            hitSlop={{ top: 12, bottom: 12, left: 12, right: 12 }}
+            activeOpacity={0.7}
+            importantForAccessibility="yes"
+          >
+            <Text style={styles.reportText}>리포트 보러가기 {'>>'}</Text>
+          </TouchableOpacity>
+        </View>
+
         <ScrollView
           contentContainerStyle={styles.scroll}
           keyboardShouldPersistTaps="handled"
           nestedScrollEnabled={true}
         >
-          <TouchableOpacity onPress={() => navigation.navigate('Report')}>
-            <Text style={styles.reportLink}>리포트 보러가기 {'>>'}</Text>
-          </TouchableOpacity>
 
           <CalendarSection
             selectedDate={selectedDate}
@@ -378,21 +438,26 @@ const AnalysisScreen = () => {
 
           {selectedTabIndex === 0 ? (
             <>
-              <CalorieProgress
-                consumedKcal={recommendData.consumedCalories}
-                recommendedKcal={recommendData.consumedCalories + recommendData.remainingCalories}
-              />
-
-              {serverMeals.map((meal, index) => (
-                <DietCard
-                  key={`${meal.mealId}-${index}`}        // 가능하면 mealId를 key로
-                  additionalMeal={meal}
-                  onDeleted={(deletedId) => {
-                    // ✅ DietCard에서 삭제 성공 후 호출됨 → 목록 갱신
-                    setServerMeals(prev => prev.filter(m => m.mealId !== deletedId));
-                  }}
+              {isToday && (
+                <CalorieProgress
+                  consumedKcal={recommendData.consumedCalories}
+                  recommendedKcal={recommendData.consumedCalories + recommendData.remainingCalories}
                 />
-              ))}
+              )}
+
+              {serverMeals.length === 0 ? (
+                <Text style={styles.noMealText}>식사 기록이 없습니다 🍽️</Text>
+              ) : (
+                serverMeals.map((meal, index) => (
+                  <DietCard
+                    key={`${meal.mealId}-${index}`}
+                    additionalMeal={meal}
+                    onDeleted={(deletedId) => {
+                      setServerMeals(prev => prev.filter(m => m.mealId !== deletedId));
+                    }}
+                  />
+                ))
+              )}
             </>
           ) : (
             <RecommendCard
@@ -434,12 +499,22 @@ const styles = StyleSheet.create({
   scroll: {
     paddingBottom: 100,
   },
-  reportLink: {
-    color: '#38B000',
-    fontWeight: 'bold',
+  headerAction: {
     position: 'absolute',
-    top: 33,
-    right: 32,
+    top: 22,
+    right: 16,
+    zIndex: 100,
+    elevation: 100,
+  },
+  reportBtn: {
+    paddingVertical: 8,
+    paddingHorizontal: 10,
+    borderRadius: 6,
+    backgroundColor: 'rgba(255,255,255,0.001)',
+  },
+  reportText: {
+    color: '#38B000',
+    fontWeight: 'bold'
   },
   cameraButton: {
     position: 'absolute',
@@ -456,7 +531,7 @@ const styles = StyleSheet.create({
     shadowOpacity: 0.25,
     shadowRadius: 4,
     elevation: 3,
-    zIndex: 2,
+    zIndex: 100,
   },
   cameraIcon: {
     width: 33.79,
@@ -474,6 +549,13 @@ const styles = StyleSheet.create({
     marginTop: 10,
     fontSize: 14,
     color: '#333',
+  },
+  noMealText: {
+    textAlign: 'center',
+    color: '#9BA1A6',
+    fontSize: 15,
+    marginTop: 30,
+    marginBottom: 10,
   },
 });
 
