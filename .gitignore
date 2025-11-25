@@ -12,6 +12,16 @@ android/app/.cxx/
 *.apk
 *.keystore
 !debug.keystore
+.bundle/
+.eslintrc.js
+.prettierrc.js
+.watchmanconfig
+Gemfile
+app.json
+jest.config.js
+npx
+react-native.config.js
+tsconfig.json
 
 # iOS
 ios/build/
