@@ -19,6 +19,32 @@ const CommunityScreen = () => {
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const navigation = useNavigation<any>();
+  const [userName, setUserName] = useState<string>('스냅');
+
+  const handleNickname = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+
+      const res = await axios.get(
+        'http://api.snapmeal.store/users/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      console.log("내 정보 조회 성공", res.data);
+
+      setUserName(res.data.nickname);
+
+    } catch (error) {
+      console.log("내 정보 조회 실패", error);
+
+    }
+  };
+
+  useEffect(() => {
+    handleNickname();
+  }, []);
 
   const mapStatusToState = (status: string) => {
     switch (status) {
@@ -33,7 +59,7 @@ const CommunityScreen = () => {
     }
   };
 
-const fetchMyChallenges = useCallback(async () => {
+  const fetchMyChallenges = useCallback(async () => {
     try {
       setLoading(true);
 
@@ -91,7 +117,7 @@ const fetchMyChallenges = useCallback(async () => {
               />
             </TouchableOpacity>
             <View style={styles.searchContainer}>
-              <Text style={styles.nick}>스냅</Text>
+              <Text style={styles.nick}>{userName}</Text>
             </View>
           </View>
 

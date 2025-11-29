@@ -59,10 +59,10 @@ const cameraOptions: CameraOptions = {
 
 const HomeScreen = () => {
   const navigation = useNavigation<WelcomeScreenNavigationProp>();
-  const userName = '스냅';
+  const [userName, setUserName] = useState<string>('스냅');
   const [meals, setMeals] = useState<Meal[]>([]);
 
-  // ✅ API에서 가져온 합계 값 저장
+  // API에서 가져온 합계 값 저장
   const [nutritionData, setNutritionData] = useState({
     totalCalories: 0,
     totalProtein: 0,
@@ -70,6 +70,31 @@ const HomeScreen = () => {
     totalSugar: 0,
     totalFat: 0,
   });
+
+  const handleNickname = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+
+      const res = await axios.get(
+        'http://api.snapmeal.store/users/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      console.log("내 정보 조회 성공", res.data);
+
+      setUserName(res.data.nickname);
+
+    } catch (error) {
+      console.log("내 정보 조회 실패", error);
+
+    }
+  };
+
+  useEffect(() => {
+    handleNickname();
+  }, []);
 
   // 오늘 날짜 기반으로 식사 데이터 불러오기
   useEffect(() => {
@@ -93,7 +118,7 @@ const HomeScreen = () => {
         const today = dayjs().format('YYYY-MM-DD');
         console.log('📅 오늘 날짜:', today);
 
-        // ✅ /meals/date API GET 요청 (하루 단위)
+        // /meals/date API GET 요청 (하루 단위)
         const response = await axios.get('http://api.snapmeal.store/meals/date', {
           headers: {
             Authorization: `Bearer ${token}`,
@@ -117,7 +142,7 @@ const HomeScreen = () => {
             return dayjs(a.mealDate).valueOf() - dayjs(b.mealDate).valueOf();
           });
 
-          // ✅ 합계 계산
+          // 합계 계산
           const totals = mealsData.reduce<TotalsType>(
             (acc, meal) => {
               acc.totalCalories += meal.calories || 0;
@@ -136,11 +161,11 @@ const HomeScreen = () => {
             }
           );
 
-          console.log('✅ 오늘 섭취 합계:', totals);
+          console.log('오늘 섭취 합계:', totals);
           setNutritionData(totals);
           setMeals(mealsData);
         } else {
-          console.warn('⚠️ 오늘 날짜에 해당하는 식사가 없습니다.');
+          console.warn('오늘 날짜에 해당하는 식사가 없습니다.');
           setMeals([]);
           setNutritionData({
             totalCalories: 0,
@@ -166,14 +191,13 @@ const HomeScreen = () => {
     fetchMealData();
   }, []);
 
-  // ✅ 색상 결정 함수
+  // 색상 결정 함수
   const getColorByStatus = (value: number) => {
     if (value >= 80) return '#FF9C9C'; // 과다
     if (value >= 40) return '#7DDBA3'; // 적정
     return '#FED77F';                  // 부족
   };
 
-  // ✅ chartData → NutrientBarChart에 바로 사용
   const chartData = [
     { label: '단백질', value: nutritionData.totalProtein, color: getColorByStatus(nutritionData.totalProtein) },
     { label: '탄수화물', value: nutritionData.totalCarbs, color: getColorByStatus(nutritionData.totalCarbs) },
@@ -189,9 +213,6 @@ const HomeScreen = () => {
         console.error('카메라 오류:', response.errorMessage);
       } else if (response.assets && response.assets.length > 0) {
         const imageUri = response.assets[0].uri;
-        // if (imageUri) {
-        //   navigation.navigate('MealRecord', { imageUri, rawNutrients: [] });
-        // }
       }
     });
   };
@@ -264,7 +285,6 @@ const HomeScreen = () => {
                       title={m.className || '식사'}
                       kcal={`${m.calories || 0}kcal`}
                       nutrients={getTop2NutrStr(m)}
-                      // 👇 마지막 카드일 경우 오른쪽 마진 추가
                       style={idx === meals.length - 1 ? { marginRight: 16 } : undefined}
                     />
                   ))

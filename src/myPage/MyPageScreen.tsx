@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   View,
   Text,
@@ -15,7 +15,6 @@ import type { RootStackParamList } from '../types/navigation';
 
 const MypageScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
-  // 알림 개수
   const [unreadCount] = useState(1);
 
   return (

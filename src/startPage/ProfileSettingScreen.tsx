@@ -43,9 +43,9 @@ const ProfileSettingScreen = () => {
 
     useEffect(() => {
         if (userInfo) {
-            console.log('🟢 유저 정보 있음:', userInfo);
+            console.log('유저 정보 있음:', userInfo);
         } else {
-            console.log('🟡 유저 정보 없음');
+            console.log('유저 정보 없음');
         }
     }, []);
 
@@ -77,18 +77,16 @@ const ProfileSettingScreen = () => {
         };
 
         try {
-            // 1. 회원가입 API 먼저 호출
             const signupRes = await axios.post('http://api.snapmeal.store/users/sign-up', finalPayload);
-            console.log('✅ 회원가입 완료:', signupRes.data);
+            console.log('회원가입 완료:', signupRes.data);
 
-            // 2. 성공 시 이동
             navigation.navigate('SignupComplete');
 
         } catch (error: any) {
             if (axios.isAxiosError(error)) {
-                console.error('❌ 서버 응답 에러:', error.response?.data || error.message);
+                console.error('서버 응답 에러:', error.response?.data || error.message);
             } else {
-                console.error('❌ 알 수 없는 에러:', error);
+                console.error('알 수 없는 에러:', error);
             }
         }
     };
