@@ -1,13 +1,31 @@
-import React, { useState } from 'react';
-import { View, Image, Text, StyleSheet, TouchableOpacity, StatusBar, ScrollView } from 'react-native';
+import { useState, useEffect } from 'react';
+import {
+  View,
+  Image,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  StatusBar,
+  ScrollView,
+  Alert,
+} from 'react-native';
 import { useRoute, RouteProp, useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
-import { RootStackParamList, NutrientItem } from '../types/navigation';
-import Header from '../components/Header';
+import { RootStackParamList } from '../types/navigation';
+
+import Header from '../components/common/Header';
 import LinearGradient from 'react-native-linear-gradient';
-import CustomInput from '../components/CustomInput';
-import CustomNumInput from '../components/CustomNumInput';
-import NutrientList from '../components/NutrientList';
+
+import CustomInput from '../components/common/CustomInput';
+import CustomNumInput from '../components/common/CustomNumInput';
+import NutrientList from '../components/analysis/NutrientList';
+
+import { DEFAULT_NUTRIENTS, mergeNutrients, RawNutrient } from '../utils/nutrition';
+
+import ImagePickerSheet from '../components/common/ImagePickerSheet';
+
+import { useNutritionOcr } from '../hooks/useNutritionOcr';
+
 
 type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type MealRecordRouteProp = RouteProp<RootStackParamList, 'MealRecord'>;
@@ -15,43 +33,94 @@ type MealRecordRouteProp = RouteProp<RootStackParamList, 'MealRecord'>;
 const MealRecordScreen = () => {
   const route = useRoute<MealRecordRouteProp>();
   const navigation = useNavigation<Navigation>();
+  const params = route.params ?? {};
+  const isEditMode = params.mode === 'edit';
 
-  const {
-    imageUri,
-    rawNutrients,
-    selectedMenu = '',
-    selectedKcal = 0,
-    nutritionId,
-  } = route.params ?? {
-    imageUri: '',
-    rawNutrients: [],
-    selectedMenu: '',
-    selectedKcal: 0,
-    nutritionId: 0,
-  };
+  const [imageUri, setImageUri] = useState(params.imageUri ?? '');
+  const [nutritionId, setNutritionId] = useState<number | null>(
+    params.nutritionId ?? null,
+  );
+  const [menuText, setMenuText] = useState(
+    params.menu ?? params.selectedMenu ?? '',
+  );
+  const [kcalText, setKcalText] = useState(String(params.selectedKcal ?? ''));
 
-  // ✅ 메뉴를 상태로 관리하도록 추가 (이거 때문에 화면 반영 안 됐던 것)
-  const [menuText, setMenuText] = useState(selectedMenu);
-  const [kcalText, setKcalText] = useState(selectedKcal.toString());
+  const [rawNutrients, setRawNutrients] = useState<RawNutrient[]>(() =>
+    params.rawNutrients && Array.isArray(params.rawNutrients)
+      ? mergeNutrients(DEFAULT_NUTRIENTS, params.rawNutrients as any[])
+      : DEFAULT_NUTRIENTS,
+  );
 
-  const handleSave = () => {
-    // 이후 저장 버튼 만들면 여기에 저장 로직 추가 가능
+  const [sheetVisible, setSheetVisible] = useState(false);
+
+  // OCR + 카메라/갤러리 훅
+  const { openCamera, openGallery } = useNutritionOcr({
+    setImageUri,
+    setKcalText,
+    setNutritionId,
+    setRawNutrients,
+  });
+
+  useEffect(() => {
+    if (isEditMode) {
+      setImageUri(params.imageUri ?? '');
+      setMenuText(params.menu ?? params.selectedMenu ?? '');
+      setKcalText(
+        params.selectedKcal != null ? String(params.selectedKcal) : '',
+      );
+      if (params.nutritionId != null) setNutritionId(params.nutritionId);
+
+      if (params.rawNutrients && Array.isArray(params.rawNutrients)) {
+        setRawNutrients(
+          mergeNutrients(DEFAULT_NUTRIENTS, params.rawNutrients as any[]),
+        );
+      }
+    }
+  }, [
+    isEditMode,
+    params.imageUri,
+    params.menu,
+    params.selectedMenu,
+    params.selectedKcal,
+    params.nutritionId,
+    params.rawNutrients,
+  ]);
+
+  const handleNext = () => {
+    if (!menuText.trim()) {
+      Alert.alert('입력 오류', '메뉴를 입력해주세요!');
+      return;
+    }
+
+    if (!isEditMode && nutritionId === null) {
+      Alert.alert('오류', '영양 분석을 먼저 완료해주세요!');
+      return;
+    }
+
+    const mode: 'create' | 'edit' = isEditMode ? 'edit' : 'create';
+
+    const nextParams = {
+      imageUri,
+      rawNutrients,
+      selectedMenu: menuText,
+      selectedKcal: Number(kcalText),
+      nutritionId: nutritionId ?? undefined,
+      mode,
+      mealId: params.mealId,
+      mealType: params.mealType,
+      memo: params.memo,
+      location: params.location,
+      mealDate: params.mealDate,
+    };
+
+    navigation.navigate('MealDetail', nextParams);
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
-      <TouchableOpacity
-        style={styles.nextButton}
-        onPress={() => navigation.navigate('MealDetail', {
-          imageUri,
-          rawNutrients,
-          selectedMenu: menuText,
-          selectedKcal: Number(kcalText),
-          nutritionId,
-        })}
 
-      >
+      <TouchableOpacity style={styles.nextButton} onPress={handleNext}>
         <Text style={styles.nextBtn}>다음 {'>>'}</Text>
       </TouchableOpacity>
 
@@ -62,46 +131,57 @@ const MealRecordScreen = () => {
           {imageUri ? (
             <Image source={{ uri: imageUri }} style={styles.image} />
           ) : (
-            <View style={[styles.image, styles.imagePlaceholder]}>
-              <Text style={{ color: '#999' }}>이미지가 없습니다</Text>
-            </View>
+            <TouchableOpacity
+              style={styles.emptyCardWrapper}
+              activeOpacity={0.8}
+              onPress={() => setSheetVisible(true)}
+            >
+              <LinearGradient
+                colors={['#EDEDED', '#EBF6E6']}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.emptyCard}
+              >
+                <Image
+                  source={require('../assets/images/nutritionPlaceholder.png')}
+                  style={styles.emptyIcon}
+                />
+                <Text style={styles.emptyTextMain}>
+                  아직 등록된 사진이 없어요.
+                </Text>
+                <Text style={styles.emptyTextSub}>
+                  영양성분표를 찍고 성분을 기록해보아요!
+                </Text>
+              </LinearGradient>
+            </TouchableOpacity>
           )}
 
-          <View style={styles.contentBox}>
-            <View style={{ flexDirection: 'row', justifyContent: 'flex-end' }}>
-              <TouchableOpacity
-                style={styles.search}
-                onPress={() => navigation.navigate('FoodSearch', {
-                  imageUri,
-                  rawNutrients,
-                  selectedMenu: menuText,
-                  selectedKcal: Number(kcalText),
-                  nutritionId,
-                })}
-              >
-                <LinearGradient
-                  colors={['#DAF1CF', '#ABE88F']}
-                  start={{ x: 0, y: 0 }}
-                  end={{ x: 1, y: 0 }}
-                  style={styles.gradientBtn}
-                >
-                  <Text style={styles.searchText}>🔍 검색하기</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
+          <ImagePickerSheet
+            visible={sheetVisible}
+            onClose={() => setSheetVisible(false)}
+            onPickCamera={() => {
+              setSheetVisible(false);
+              openCamera();
+            }}
+            onPickGallery={() => {
+              setSheetVisible(false);
+              openGallery();
+            }}
+          />
 
-            <View style={{ marginTop: -15 }}>
+          <View style={styles.contentBox}>
+            <View>
               <CustomInput
                 label="메뉴"
                 placeholder="샐러드"
                 value={menuText}
                 onChangeText={setMenuText}
                 labelColor="#17171B"
-                // helperText="* 안내메시지"
                 helperColor="red"
                 textColor="#17171B"
-                borderColor="#17171B"
+                borderColor="#ccc"
               />
+
               <CustomNumInput
                 label="칼로리"
                 placeholder="152"
@@ -110,12 +190,13 @@ const MealRecordScreen = () => {
                 labelColor="#17171B"
                 helperColor="red"
                 textColor="#17171B"
-                borderColor="#17171B"
+                borderColor="#ccc"
               />
 
               <View style={{ paddingHorizontal: 27, marginTop: 54 }}>
                 <NutrientList
-                  data={(rawNutrients || []).map(item => ({
+                  data={rawNutrients.map((item, index) => ({
+                    key: index,
                     ...item,
                     value: item.grams,
                   }))}
@@ -129,8 +210,6 @@ const MealRecordScreen = () => {
     </View>
   );
 };
-
-export default MealRecordScreen;
 
 const styles = StyleSheet.create({
   scrollContainer: {
@@ -159,10 +238,33 @@ const styles = StyleSheet.create({
     overflow: 'hidden',
     marginBottom: 20,
   },
-  imagePlaceholder: {
-    backgroundColor: '#EEE',
+  emptyCardWrapper: {
+    width: '100%',
+    aspectRatio: 1,
+    marginBottom: 20,
+    borderRadius: 20,
+    overflow: 'hidden',
+  },
+  emptyCard: {
+    flex: 1,
+    borderRadius: 20,
     justifyContent: 'center',
     alignItems: 'center',
+  },
+  emptyIcon: {
+    width: 75,
+    height: 65.77,
+    marginBottom: 12,
+    resizeMode: 'contain',
+  },
+  emptyTextMain: {
+    fontSize: 12,
+    color: '#8E8E8E',
+    marginBottom: 2,
+  },
+  emptyTextSub: {
+    fontSize: 12,
+    color: '#8E8E8E',
   },
   contentBox: {
     backgroundColor: '#FFFFFF',
@@ -171,24 +273,6 @@ const styles = StyleSheet.create({
     position: 'relative',
     elevation: 2,
   },
-  search: {
-    width: 100,
-    height: 45,
-    borderRadius: 8,
-    marginTop: 20,
-    marginHorizontal: 27,
-    overflow: 'hidden',
-    elevation: 3,
-  },
-  gradientBtn: {
-    width: '100%',
-    height: '100%',
-    justifyContent: 'center',
-    alignItems: 'center',
-    borderRadius: 8,
-  },
-  searchText: {
-    color: '#17171B',
-    fontWeight: 'bold',
-  },
 });
+
+export default MealRecordScreen;

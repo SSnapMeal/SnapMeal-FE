@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 
@@ -20,7 +19,7 @@ const Header = ({
       {showBackArrow && (
         <TouchableOpacity onPress={() => navigation.goBack()}>
           <Image
-            source={require('../assets/images/backArrow-black.png')}
+            source={require('../../assets/images/backArrow-black.png')}
             style={styles.backArrowImage}
           />
         </TouchableOpacity>

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, Text, StyleSheet, ScrollView } from 'react-native';
 import InfoCardItem from './InfoCardItem';
 
@@ -57,9 +56,9 @@ const RecommendCard = ({
         {exercises.map((item, index) => (
           <InfoCardItem
             key={`exercise-${index}`}
-            title={item.name}              // ✅ 운동 이름
-            description={`${item.duration} • ${item.calories}kcal`} // 설명: 시간 + 칼로리
-            emoji={item.emoji}             // ✅ 이미지 대신 이모지 사용
+            title={item.name}
+            description={`${item.duration} • ${item.calories}kcal`}
+            emoji={item.emoji}
             badge={{ text: item.category, color: '#85DFAC' }}
             variant="recommend"
           />
@@ -68,7 +67,9 @@ const RecommendCard = ({
 
       {/* 음식 추천 */}
       <Text style={styles.sectionTitle}>
-        남은 {remainingCalories}kcal는 이렇게 채워봐요!
+        {remainingCalories > 0
+          ? `남은 ${remainingCalories}kcal는 이렇게 채워봐요!`
+          : '오늘의 칼로리를 초과했어요!'}
       </Text>
       <ScrollView
         horizontal
@@ -78,9 +79,9 @@ const RecommendCard = ({
         {foods.map((item, index) => (
           <InfoCardItem
             key={`food-${index}`}
-            title={item.name}           // ✅ 음식 이름
-            description={item.benefit}  // ✅ 설명 → benefit
-            emoji={item.emoji}          // ✅ 이미지 대신 이모지
+            title={item.name}
+            description={item.benefit}
+            emoji={item.emoji}
             variant="recommend"
           />
         ))}
@@ -98,6 +99,7 @@ const styles = StyleSheet.create({
     fontWeight: 'bold',
     fontSize: 16,
     marginBottom: 12,
+    color: '#17171B',
   },
   slider: {
     marginBottom: 54,

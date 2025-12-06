@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -13,19 +13,18 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { useCallback } from 'react';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import { useNavigation, useRoute, useFocusEffect } from '@react-navigation/native';
-import Header from '../components/Header';
-import QuitConfirmModal from '../components/QuitConfirmModal';
+import { useNavigation, useRoute } from '@react-navigation/native';
+import Header from '../components/common/Header';
+import QuitConfirmModal from '../components/common/QuitConfirmModal';
 
 const { height: SCREEN_HEIGHT } = Dimensions.get('window');
 const COLLAPSED_OFFSET = SCREEN_HEIGHT * 0.22;
 const HANDLE_HEIGHT = 16;
 const HEADER_HEIGHT = 48;
 
-type ChallengeState = '참여전' | '참여중' | '실패' | '성공';
+export type ChallengeState = '참여전' | '참여중' | '실패' | '성공';
 
 const mapStatusToState = (status: string): ChallengeState => {
   switch (status) {
@@ -55,16 +54,19 @@ const ChallengeDetailScreen = () => {
   const [showQuitModal, setShowQuitModal] = useState(false);
   const [expanded, setExpanded] = useState(false);
   const isFinished = status === '성공' || status === '실패';
+
   const [stamps, setStamps] = useState<boolean[]>(() => {
     if (challenge.stamps && challenge.stamps.length > 0) {
       return challenge.stamps;
     }
-
     const dayCount = 7;
     return Array(dayCount).fill(false);
   });
+
   const [backdropEnabled, setBackdropEnabled] = useState(false);
+
   const [review, setReview] = useState('');
+  const [reviewId, setReviewId] = useState<number | null>(null);
 
   const periodText = `${challenge.startDate ?? ''} ~ ${challenge.endDate ?? ''}`;
   const translateY = useRef(new Animated.Value(COLLAPSED_OFFSET)).current;
@@ -73,6 +75,46 @@ const ChallengeDetailScreen = () => {
     const t = setTimeout(() => setBackdropEnabled(true), 120);
     return () => clearTimeout(t);
   }, []);
+
+  useEffect(() => {
+    const fetchReview = async () => {
+      try {
+        const token = await AsyncStorage.getItem('accessToken');
+        if (!token) return;
+
+        const res = await axios.get(
+          'http://api.snapmeal.store/challenges/reviews/my',
+          {
+            headers: {
+              Authorization: `Bearer ${token}`,
+              'Content-Type': 'application/json',
+            },
+          }
+        );
+
+        if (Array.isArray(res.data)) {
+          const myReviewsForThis = res.data.filter(
+            (r: any) => r.challengeId === challenge.challengeId
+          );
+
+          if (myReviewsForThis.length > 0) {
+            const latest = myReviewsForThis[myReviewsForThis.length - 1];
+            setReview(latest.content || '');
+            setReviewId(latest.reviewId);
+          } else {
+            setReview('');
+            setReviewId(null);
+          }
+        }
+      } catch (error: any) {
+        console.log('리뷰 조회 실패:', error?.response?.data ?? error);
+      }
+    };
+
+    if (isFinished) {
+      fetchReview();
+    }
+  }, [challenge.challengeId, isFinished]);
 
   const expandSheet = () => {
     setExpanded(true);
@@ -119,7 +161,6 @@ const ChallengeDetailScreen = () => {
     }
   };
 
-
   const handleGiveUp = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
@@ -147,24 +188,44 @@ const ChallengeDetailScreen = () => {
       const token = await AsyncStorage.getItem('accessToken');
       if (!token) return;
 
-      await axios.post(
-        `http://api.snapmeal.store/challenges/${challenge.challengeId}/reviews`,
-        {
-          rating: 5,
-          content: review,
-        },
-        {
-          headers: {
-            Authorization: `Bearer ${token}`,
-            'Content-Type': 'application/json',
-          },
-        }
-      );
+      const headers = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
 
-      Alert.alert("리뷰가 저장됐어요!");
-    } catch (error) {
-      console.log(error);
-      Alert.alert("리뷰 저장 중 오류가 발생했어요.");
+      if (reviewId) {
+        const res = await axios.patch(
+          `http://api.snapmeal.store/challenges/reviews/${reviewId}`,
+          {
+            rating: 5,
+            content: review,
+          },
+          { headers }
+        );
+        console.log('리뷰 수정 성공:', res.data);
+        Alert.alert('리뷰가 수정됐어요!');
+      } else {
+        const res = await axios.post(
+          `http://api.snapmeal.store/challenges/reviews/${challenge.challengeId}`,
+          { rating: 5, content: review },
+          { headers }
+        );
+
+        console.log('리뷰 생성 성공:', res.data);
+
+        if (res.data?.reviewId) {
+          setReviewId(res.data.reviewId);
+        }
+
+        Alert.alert('리뷰가 저장됐어요!');
+      }
+    } catch (error: any) {
+      console.log(
+        '리뷰 저장/수정 실패:',
+        error?.response?.status,
+        error?.response?.data ?? error.message
+      );
+      Alert.alert('리뷰 저장 중 오류가 발생했어요.');
     }
   };
 
@@ -189,7 +250,11 @@ const ChallengeDetailScreen = () => {
       >
         <View style={styles.fixedHandle} />
         <View style={styles.fixedHeader}>
-          <Header title={challenge.title} backgroundColor="transparent" showBackArrow={false} />
+          <Header
+            title={challenge.title}
+            backgroundColor="transparent"
+            showBackArrow={false}
+          />
         </View>
 
         <ScrollView
@@ -207,12 +272,9 @@ const ChallengeDetailScreen = () => {
           scrollEventThrottle={16}
           bounces
         >
-          {/* ✅ 진행중일 때만 스탬프 보여줌 */}
           {joined && !isFinished && (
             <View style={styles.card}>
-              <Text style={styles.cardTitle}>
-                {`챌린지 기록 (${periodText})`}
-              </Text>
+              <Text style={styles.cardTitle}>{`챌린지 기록 (${periodText})`}</Text>
 
               <View style={styles.stampGrid}>
                 {stamps.map((completed, index) => {
@@ -236,7 +298,6 @@ const ChallengeDetailScreen = () => {
             </View>
           )}
 
-          {/* 성공/실패 시에는 소감 박스 */}
           {isFinished && (
             <View style={styles.card}>
               <Text style={styles.cardTitle}>
@@ -258,7 +319,9 @@ const ChallengeDetailScreen = () => {
                 style={[styles.bottomBtn, styles.bottomBtnPrimary, { marginTop: 16 }]}
                 onPress={handleSubmitReview}
               >
-                <Text style={styles.bottomBtnPrimaryText}>리뷰 저장하기</Text>
+                <Text style={styles.bottomBtnPrimaryText}>
+                  {reviewId ? '리뷰 수정하기' : '리뷰 저장하기'}
+                </Text>
               </TouchableOpacity>
             </View>
           )}

@@ -1,8 +1,10 @@
 export interface NutrientItem {
-  key: number;
+  id: string;
+  label: string;
+  name: string;
+  nutrientName: string;
   grams: number;
   color: string;
-  label: string;
 }
 
 export type Nutrient = {
@@ -36,7 +38,6 @@ export type RootStackParamList = {
     tag: '과다' | '적정' | '부족';
   };
 
-
   Report: undefined;
 
   ImageCheck: {
@@ -53,12 +54,21 @@ export type RootStackParamList = {
   };
 
   MealRecord: {
-    imageUri: string;
+    imageUri?: string;
     rawNutrients: NutrientItem[];
     selectedMenu?: string;
     selectedKcal?: number;
-    nutritionId: number;
+    nutritionId?: number;
+    menu?: string;
+    mode?: 'create' | 'edit';
+    mealId?: number;
+
+    mealType?: string;
+    memo?: string;
+    location?: string;
+    mealDate?: string;
   };
+
 
   FoodSearch: {
     imageUri: string;
@@ -69,11 +79,20 @@ export type RootStackParamList = {
   };
 
   MealDetail: {
-    imageUri: string;
-    rawNutrients: NutrientItem[];
+    imageUri?: string;
+    rawNutrients?: NutrientItem[];
     selectedMenu?: string;
+    ocrMenuName?: string;
     selectedKcal?: number;
-    nutritionId: number;
+    nutritionId?: number;
+
+    mode?: 'create' | 'edit';
+    mealId?: number;
+
+    mealType?: string;
+    memo?: string;
+    location?: string;
+    mealDate?: string;
   };
 
   Community: undefined;

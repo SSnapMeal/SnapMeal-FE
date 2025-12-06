@@ -49,6 +49,7 @@ const styles = StyleSheet.create({
   },
   tabItemText: {
     fontSize: 12,
+    color: '#17171B',
   },
 });
 

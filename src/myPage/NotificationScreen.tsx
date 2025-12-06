@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import { useState } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -8,7 +8,7 @@ import {
   Animated,
   TouchableOpacity,
 } from 'react-native';
-import Header from '../components/Header';
+import Header from '../components/common/Header';
 import { useNavigation } from '@react-navigation/native';
 
 const notifications = [

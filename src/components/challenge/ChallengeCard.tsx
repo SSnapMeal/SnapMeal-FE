@@ -19,15 +19,22 @@ type Props = {
   progressText?: string;
   onPress?: () => void;
   badgeTop?: number;
+
+  hasReview?: boolean;
 };
 
 const getColors = (s: ChallengeState) => {
   switch (s) {
-    case '참여전': return { text: '#7A7A7A', bg: '#E9E9E9' };
-    case '참여중': return { text: '#38B000', bg: '#EDF8E8' };
-    case '성공': return { text: '#EDF8E8', bg: '#38B000' };
-    case '실패': return { text: '#E67373', bg: '#F8E8E8' };
-    default: return { text: '#7A7A7A', bg: '#E9E9E9' };
+    case '참여전':
+      return { text: '#7A7A7A', bg: '#E9E9E9' };
+    case '참여중':
+      return { text: '#38B000', bg: '#EDF8E8' };
+    case '성공':
+      return { text: '#EDF8E8', bg: '#38B000' };
+    case '실패':
+      return { text: '#E67373', bg: '#F8E8E8' };
+    default:
+      return { text: '#7A7A7A', bg: '#E9E9E9' };
   }
 };
 
@@ -40,11 +47,16 @@ const ChallengeCard: React.FC<Props> = ({
   progressText,
   onPress,
   badgeTop = 52,
+  hasReview,
 }) => {
   const colors = getColors(state);
 
   return (
-    <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.shadowWrap}>
+    <TouchableOpacity
+      activeOpacity={0.9}
+      onPress={onPress}
+      style={styles.shadowWrap}
+    >
       <View style={styles.card}>
         {/* 상단 이미지 */}
         <Image source={imageSource} style={styles.image} />
@@ -53,17 +65,26 @@ const ChallengeCard: React.FC<Props> = ({
         <View style={styles.body}>
           <Text style={styles.title}>{title}</Text>
 
-          {!!targetMenuName && <Text
-            style={styles.bullet}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >•  {targetMenuName}</Text>}
-          {!!description && <Text
-            style={styles.bullet}
-            numberOfLines={1}
-            ellipsizeMode="tail"
-          >•  {description}</Text>}
+          {!!targetMenuName && (
+            <Text
+              style={styles.bullet}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              •  {targetMenuName}
+            </Text>
+          )}
+          {!!description && (
+            <Text
+              style={styles.bullet}
+              numberOfLines={1}
+              ellipsizeMode="tail"
+            >
+              •  {description}
+            </Text>
+          )}
 
+          {/* 상태 뱃지 */}
           <View
             style={[
               styles.badgeAbsolute,
@@ -71,7 +92,8 @@ const ChallengeCard: React.FC<Props> = ({
             ]}
           >
             <Text style={[styles.badgeText, { color: colors.text }]}>
-              {state}{progressText ? ` ${progressText}` : ''}
+              {state}
+              {progressText ? ` ${progressText}` : ''}
             </Text>
           </View>
         </View>

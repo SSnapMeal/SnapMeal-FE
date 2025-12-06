@@ -1,4 +1,4 @@
-import React, { useEffect, useRef } from 'react';
+import React, { useEffect, useMemo, ReactNode } from 'react';
 import { View, Text, TouchableOpacity, PanResponder, StyleSheet } from 'react-native';
 import dayjs from 'dayjs';
 
@@ -9,39 +9,49 @@ interface CalendarProps {
   setSelectedDate: SetDateType;
   isExpanded: boolean;
   toggleExpanded: () => void;
-  marked: { [key: string]: string }; // dateStr → color
+  marked: { [key: string]: string };
+  headerRight?: ReactNode;
 }
 
-// 상태별 색상
 const STATUS_COLORS = {
-  over: '#FA9E9E',    // 과다
-  normal: '#80DAA7',  // 적정
-  lack: '#FED77F',    // 부족
+  over: '#FA9E9E',
+  normal: '#80DAA7',
+  lack: '#FED77F',
 };
 
-const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpanded, marked }: CalendarProps) => {
+const CalendarSection = ({
+  selectedDate,
+  setSelectedDate,
+  isExpanded,
+  toggleExpanded,
+  marked,
+  headerRight,
+}: CalendarProps) => {
   const currentMonth = selectedDate.startOf('month');
   const daysInMonth = currentMonth.daysInMonth();
   const startDay = currentMonth.day();
 
-  const panResponder = useRef(
-    PanResponder.create({
-      onMoveShouldSetPanResponder: (_, gestureState) => Math.abs(gestureState.dx) > 20,
-      onPanResponderRelease: (_, gestureState) => {
-        if (gestureState.dx < -20) {
-          setSelectedDate(prev => {
-            const base = isExpanded ? prev : prev.startOf('week');
-            return isExpanded ? base.add(1, 'month') : base.add(1, 'week');
-          });
-        } else if (gestureState.dx > 20) {
-          setSelectedDate(prev => {
-            const base = isExpanded ? prev : prev.startOf('week');
-            return isExpanded ? base.subtract(1, 'month') : base.subtract(1, 'week');
-          });
-        }
-      },
-    })
-  ).current;
+  const panResponder = useMemo(
+    () =>
+      PanResponder.create({
+        onMoveShouldSetPanResponder: (_, gestureState) =>
+          Math.abs(gestureState.dx) > 20,
+        onPanResponderRelease: (_, gestureState) => {
+          if (gestureState.dx < -20) {
+            setSelectedDate(prev => {
+              const base = isExpanded ? prev : prev.startOf('week');
+              return isExpanded ? base.add(1, 'month') : base.add(1, 'week');
+            });
+          } else if (gestureState.dx > 20) {
+            setSelectedDate(prev => {
+              const base = isExpanded ? prev : prev.startOf('week');
+              return isExpanded ? base.subtract(1, 'month') : base.subtract(1, 'week');
+            });
+          }
+        },
+      }),
+    [isExpanded, setSelectedDate],
+  );
 
   const renderCalendarCells = () => {
     const cells = [];
@@ -61,8 +71,7 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
           key={dateStr}
           style={styles.cell}
           onPress={() => {
-            console.log('📆 사용자가 선택한 날짜:', dateStr); // ✅ 클릭할 때 즉시 콘솔 출력
-            setSelectedDate(date); // state 업데이트
+            setSelectedDate(date);
             if (isExpanded) toggleExpanded();
           }}
         >
@@ -73,7 +82,7 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
             )}
             <Text style={styles.cellText}>{d}</Text>
           </View>
-        </TouchableOpacity>
+        </TouchableOpacity>,
       );
     }
 
@@ -92,7 +101,11 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
           const bgColor = marked[dateStr];
 
           return (
-            <TouchableOpacity key={dateStr} style={styles.cell} onPress={() => setSelectedDate(date)}>
+            <TouchableOpacity
+              key={dateStr}
+              style={styles.cell}
+              onPress={() => setSelectedDate(date)}
+            >
               <View style={styles.cellInner}>
                 {isSelected && <View style={styles.selectedBox} />}
                 {typeof bgColor === 'string' && bgColor.length > 0 && (
@@ -118,11 +131,14 @@ const CalendarSection = ({ selectedDate, setSelectedDate, isExpanded, toggleExpa
           <Text style={styles.date}>{selectedDate.format('YYYY.MM')}</Text>
           <Text style={styles.arrow}>{isExpanded ? '▲' : '▼'}</Text>
         </TouchableOpacity>
+        {headerRight}
       </View>
 
       <View style={styles.weekRow}>
-        {['일', '월', '화', '수', '목', '금', '토'].map((d) => (
-          <Text key={d} style={styles.weekText}>{d}</Text>
+        {['일', '월', '화', '수', '목', '금', '토'].map(d => (
+          <Text key={d} style={styles.weekText}>
+            {d}
+          </Text>
         ))}
       </View>
 
@@ -153,9 +169,11 @@ const styles = StyleSheet.create({
     fontSize: 18,
     fontWeight: 'bold',
     marginRight: 4,
+    color: '#17171B',
   },
   arrow: {
     fontSize: 16,
+    color: '#17171B',
   },
   weekRow: {
     flexDirection: 'row',

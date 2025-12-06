@@ -1,4 +1,4 @@
-import React, { useEffect, useState, useCallback } from 'react';
+import { useEffect, useState, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -7,11 +7,11 @@ import {
   Text,
   Image,
 } from 'react-native';
-import Header from '../components/Header';
+import Header from '../components/common/Header';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
-import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
+import ChallengeCard, { ChallengeState } from '../components/challenge/ChallengeCard';
 
 const mapStatusToState = (status: string): ChallengeState => {
   switch (status) {

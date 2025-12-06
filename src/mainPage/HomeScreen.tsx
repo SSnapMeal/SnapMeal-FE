@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   View,
   StyleSheet,
@@ -13,9 +13,9 @@ import {
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import Navigation from '../components/Navigation';
-import NutrientBarChart from '../components/NutrientBarChart';
-import MealCard from '../components/MealCard';
+import Navigation from '../components/common/Navigation';
+import NutrientBarChart from '../components/common/NutrientBarChart';
+import MealCard from '../components/home/MealCard';
 import { launchCamera, CameraOptions, CameraType } from 'react-native-image-picker';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';

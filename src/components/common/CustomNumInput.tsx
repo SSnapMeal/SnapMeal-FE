@@ -18,7 +18,7 @@ interface CustomNumInputProps extends TextInputProps {
   rightElement?: React.ReactNode;
   labelColor?: string;
   borderColor?: string;
-  textColor?: string; // ✅ 추가
+  textColor?: string;
 }
 
 const CustomNumInput: React.FC<CustomNumInputProps> = ({
@@ -33,7 +33,7 @@ const CustomNumInput: React.FC<CustomNumInputProps> = ({
   rightElement,
   labelColor = 'white',
   borderColor = 'white',
-  textColor = 'white', // ✅ 기본값 설정
+  textColor = 'white',
   ...props
 }) => {
   return (
@@ -45,7 +45,7 @@ const CustomNumInput: React.FC<CustomNumInputProps> = ({
       <View style={styles.inputRow}>
         <View style={[styles.textAndTimer, { borderBottomColor: borderColor }]}>
           <TextInput
-            style={[styles.input, { color: textColor }]} // ✅ 텍스트 색상 적용
+            style={[styles.input, { color: textColor }]}
             placeholder={placeholder}
             placeholderTextColor={placeholderTextColor}
             keyboardType="numeric"
@@ -76,6 +76,8 @@ const styles = StyleSheet.create({
   label: {
     fontSize: 14,
     marginBottom: 8,
+    color: '#17171B',
+    fontWeight: 700
   },
   inputRow: {
     flexDirection: 'row',

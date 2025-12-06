@@ -6,7 +6,7 @@ const FoodItem = ({ name, kcal, onAdd }: { name: string; kcal: number; onAdd: ()
         <Text style={styles.kcalText}>{kcal}kcal</Text>
         <TouchableOpacity style={styles.addButton} onPress={onAdd}>
             <Image
-                source={require('../assets/images/plus.png')}
+                source={require('../../assets/images/plus.png')}
                 style={styles.plusIcon}
             />
         </TouchableOpacity>

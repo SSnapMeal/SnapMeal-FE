@@ -1,13 +1,12 @@
 import { StatusBar, StyleSheet, View } from "react-native";
-import Header from '../components/Header';
-import CustomNumInput from "../components/CustomNumInput";
-import CompleteButton from "../components/CompleteButton";
+import Header from '../components/common/Header';
+import CustomNumInput from '../components/common/CustomNumInput';
+import CompleteButton from '../components/common/CompleteButton';
 import { useNavigation } from '@react-navigation/native';
 import { useEffect, useState } from "react";
 
 const EditGoalScreen = () => {
     const navigation = useNavigation();
-    // 하드코딩 부분
     const age = 28;
     const gender = 'female';
 
@@ -26,7 +25,6 @@ const EditGoalScreen = () => {
         }
     };
 
-    // 권장 운동량 추천 부분
     const calculateRecommendedKm = (calorie: number) => {
         return Math.round((calorie / 60) * 10) / 10;
     };

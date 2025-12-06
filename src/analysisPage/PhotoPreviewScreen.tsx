@@ -1,19 +1,30 @@
-import React, { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  View, Text, StyleSheet, ScrollView, TouchableOpacity, Image, Dimensions, StatusBar, Alert,
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Dimensions,
+  StatusBar,
+  Alert,
 } from 'react-native';
 import { PieChart } from 'react-native-chart-kit';
-import Header from '../components/Header';
-import InfoCardItem from '../components/InfoCardItem';
-import NutrientList from '../components/NutrientList';
+
+import Header from '../components/common/Header';
+import InfoCardItem from '../components/analysis/InfoCardItem';
+import NutrientList from '../components/analysis/NutrientList';
+
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
-import NutrientBarChart from '../components/NutrientBarChart';
-import SaveNoticeBox from '../components/SaveNoticeBox';
+
+import NutrientBarChart from '../components/common/NutrientBarChart';
+import SaveNoticeBox from '../components/common/SaveNoticeBox';
+
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { ActivityIndicator } from 'react-native';
+
 
 type Params = {
   imageUri: string;
@@ -37,6 +48,7 @@ const PhotoPreviewScreen = () => {
     carbs: 0,
     sugar: 0,
     fat: 0,
+    sodium: 0,
   });
 
   const [nutritionId, setNutritionId] = useState<number>(receivedNutritionId);
@@ -58,33 +70,40 @@ const PhotoPreviewScreen = () => {
         : '';
 
   const rawNutrients = useMemo(() => {
-    const totalKnown = nutrients.protein + nutrients.carbs + nutrients.sugar + nutrients.fat;
-    const targetTotal = 100;
-    const etc = Math.max(0, targetTotal - totalKnown);
     return [
       { key: 1, grams: nutrients.protein, color: '#CDE8BF', label: '단백질' },
       { key: 2, grams: nutrients.carbs, color: '#FFD794', label: '탄수화물' },
       { key: 3, grams: nutrients.sugar, color: '#FFC5C6', label: '당' },
       { key: 4, grams: nutrients.fat, color: '#FFF7C2', label: '지방' },
+      { key: 5, grams: nutrients.sodium, color: '#c2fff9ff', label: '나트륨' },
     ];
   }, [nutrients]);
 
   const totalGrams = rawNutrients.reduce((sum, item) => sum + item.grams, 0);
-  const data = rawNutrients.map(item => ({
-    key: item.key,
-    label: item.label,
-    color: item.color,
-    grams: item.grams,
-    value: parseFloat(((item.grams / totalGrams) * 100).toFixed(1)),
-  }));
+  const data = rawNutrients.map(item => {
+    const value =
+      totalGrams === 0
+        ? 0
+        : parseFloat(((item.grams / totalGrams) * 100).toFixed(1));
 
-  const pieData = data.map(item => ({
-    name: item.label,
-    population: item.grams,
-    color: item.color,
-    legendFontColor: '#444',
-    legendFontSize: 12,
-  }));
+    return {
+      key: item.key,
+      label: item.label,
+      color: item.color,
+      grams: item.grams,
+      value,
+    };
+  });
+
+  const pieData = data
+    .filter(item => item.grams > 0)
+    .map(item => ({
+      name: item.label,
+      population: item.grams,
+      color: item.color,
+      legendFontColor: '#444',
+      legendFontSize: 12,
+    }));
 
   const details = [
     {
@@ -116,12 +135,8 @@ const PhotoPreviewScreen = () => {
   useEffect(() => {
     const fetchNutritionData = async () => {
       try {
-        setIsLoading(true); // ✅ 분석 시작 시 로딩 표시
+        setIsLoading(true);
         const token = await AsyncStorage.getItem('accessToken');
-
-        console.log('🍳 foodNames:', foodNames);
-        console.log('🖼 imageId:', imageId);
-        console.log('🛂 accessToken:', token);
 
         if (!foodNames.length || !imageId || !token) {
           Alert.alert('필요한 정보가 누락되었습니다.');
@@ -142,11 +157,8 @@ const PhotoPreviewScreen = () => {
           }
         );
 
-        console.log('전체 서버 응답:', response.data);
-
         if (response.data?.result) {
           const nutrition = response.data.result;
-          console.log('📡 nutrition result:', nutrition);
 
           setNutrients({
             calories: nutrition.calories,
@@ -154,26 +166,23 @@ const PhotoPreviewScreen = () => {
             carbs: nutrition.carbs,
             sugar: nutrition.sugar,
             fat: nutrition.fat,
+            sodium: nutrition.sodium,
           });
 
           setNutritionId(nutrition.nutritionId);
-        } else {
-          console.warn('⚠️ result가 없습니다.', response.data);
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
           console.error(
-            '❌ API 요청 실패:',
+            'API 요청 실패:',
             'status:',
             error.response?.status,
             'data:',
             error.response?.data
           );
-        } else {
-          console.error('❌ 알 수 없는 오류:', error);
         }
       } finally {
-        setIsLoading(false); // ✅ 완료 후 로딩 해제
+        setIsLoading(false);
       }
     };
 
@@ -181,9 +190,18 @@ const PhotoPreviewScreen = () => {
   }, [imageId, classNames]);
 
   const handleSave = () => {
+    const converted = rawNutrients.map(item => ({
+      id: String(item.key),
+      label: item.label,
+      name: item.label,
+      nutrientName: item.label,
+      grams: item.grams,
+      color: item.color,
+    }));
+
     navigation.navigate('MealRecord', {
       imageUri,
-      rawNutrients,
+      rawNutrients: converted,
       selectedMenu: menuText,
       selectedKcal: nutrients.calories,
       nutritionId: nutritionId,
@@ -205,7 +223,6 @@ const PhotoPreviewScreen = () => {
       <StatusBar backgroundColor="#FAFAFA" barStyle="dark-content" />
       <Header title="분석 결과" backgroundColor="#FAFAFA" />
 
-      {/* ✅ 로딩 아닐 때만 본문 렌더 */}
       {!isLoading && (
         <ScrollView contentContainerStyle={styles.scrollContainer}>
           <Text style={styles.title}>
@@ -278,7 +295,6 @@ const PhotoPreviewScreen = () => {
         </ScrollView>
       )}
 
-      {/* ✅ 로딩 오버레이: 화면 전면 차단 + 스피너 */}
       {isLoading && (
         <View style={styles.loadingOverlay} pointerEvents="auto">
           <ActivityIndicator size="large" />

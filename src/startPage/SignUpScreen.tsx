@@ -1,12 +1,12 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 
 import { View, StyleSheet, Text, SafeAreaView, TouchableOpacity, Dimensions, Image } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 
-import LoginBackground from '../components/LoginBackground';
-import CustomInput from '../components/CustomInput'; // 입력창 컴포넌트
+import LoginBackground from '../components/auth/LoginBackground';
+import CustomInput from '../components/common/CustomInput';
 import { TextInput } from 'react-native-gesture-handler';
 
 const { height } = Dimensions.get('window');

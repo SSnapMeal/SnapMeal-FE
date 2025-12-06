@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import {
   View,
   Text,
@@ -9,13 +9,42 @@ import {
   StatusBar
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
-import Navigation from '../components/Navigation';
+import Navigation from '../components/common/Navigation';
 import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import type { RootStackParamList } from '../types/navigation';
+import axios from 'axios';
+import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const MypageScreen = () => {
   const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
   const [unreadCount] = useState(1);
+  const [userName, setUserName] = useState('');
+  const [userType, setUserType] = useState('');
+
+  const handleNickname = async () => {
+    try {
+      const accessToken = await AsyncStorage.getItem('accessToken');
+
+      const res = await axios.get('http://api.snapmeal.store/users/me', {
+        headers: {
+          Authorization: `Bearer ${accessToken}`,
+        },
+      });
+
+      console.log("내 정보 조회 성공", res.data);
+
+      setUserName(res.data.nickname);
+      setUserType(res.data.type);
+
+    } catch (error) {
+      console.log("내 정보 조회 실패", error);
+    }
+  };
+
+  useEffect(() => {
+    handleNickname();
+  }, []);
+
 
   return (
     <>
@@ -47,8 +76,8 @@ const MypageScreen = () => {
             style={styles.profileImage}
           />
           <View style={styles.profileTextBox}>
-            <Text style={styles.profileName}>김스냅님</Text>
-            <Text style={styles.profileType}>#디저트 집착 유형</Text>
+            <Text style={styles.profileName}>{userName}님</Text>
+            <Text style={styles.profileType}>{userType}</Text>
           </View>
           <TouchableOpacity onPress={() => navigation.navigate('ProfileEdit')}>
             <Image
@@ -118,10 +147,13 @@ const styles = StyleSheet.create({
   profileName: {
     fontSize: 16,
     fontWeight: 'bold',
+    color: '#17171B',
+    marginTop: -5
   },
   profileType: {
     fontSize: 14,
     marginTop: 2,
+    color: '#17171B',
   },
   arrowImage: {
     width: 21,
@@ -168,6 +200,8 @@ const styles = StyleSheet.create({
   },
   badgeText: {
     fontSize: 14,
+    color: '#17171B',
+    marginTop: -2
   },
   sectionHeader: {
     flexDirection: 'row',
@@ -191,6 +225,7 @@ const styles = StyleSheet.create({
   },
   menuText: {
     fontSize: 16,
+    color: '#17171B',
   },
 });
 

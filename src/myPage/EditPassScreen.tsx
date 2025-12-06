@@ -1,8 +1,10 @@
-import { StatusBar, StyleSheet, View } from "react-native";
-import Header from '../components/Header';
-import CompleteButton from "../components/CompleteButton";
+import { StatusBar, StyleSheet, View } from 'react-native';
+
+import Header from '../components/common/Header';
+import CompleteButton from '../components/common/CompleteButton';
+import CustomInput from '../components/common/CustomInput';
+
 import { useNavigation } from '@react-navigation/native';
-import CustomInput from "../components/CustomInput";
 
 const EditPassScreen = () => {
     const navigation = useNavigation();

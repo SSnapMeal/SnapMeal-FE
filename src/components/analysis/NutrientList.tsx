@@ -11,12 +11,11 @@ type NutrientItem = {
 
 interface NutrientListProps {
   data: NutrientItem[];
-  editable?: boolean; // ✅ 입력 가능 여부
+  editable?: boolean;
 }
 
 const NutrientList: React.FC<NutrientListProps> = ({ data, editable = false }) => {
   const [localData, setLocalData] = useState(data);
-  // ✅ props.data가 바뀔 때마다 localData 업데이트
   useEffect(() => {
     setLocalData(data);
   }, [data]);
@@ -27,10 +26,14 @@ const NutrientList: React.FC<NutrientListProps> = ({ data, editable = false }) =
     if (!isNaN(parsedValue)) {
       updatedData[index].grams = parsedValue;
 
-      // 비율(% value)도 업데이트 (합계 기준)
       const total = updatedData.reduce((sum, item) => sum + item.grams, 0);
+
       updatedData.forEach(item => {
-        item.value = parseFloat(((item.grams / total) * 100).toFixed(1));
+        if (total === 0) {
+          item.value = 0;
+        } else {
+          item.value = parseFloat(((item.grams / total) * 100).toFixed(1));
+        }
       });
 
       setLocalData(updatedData);
@@ -55,7 +58,7 @@ const NutrientList: React.FC<NutrientListProps> = ({ data, editable = false }) =
             </View>
           ) : (
             <Text style={styles.value}>
-              {item.value}% ({item.grams}g)
+              {isNaN(item.value) ? 0 : item.value}% ({item.grams}g)
             </Text>
           )}
         </View>
@@ -84,6 +87,7 @@ const styles = StyleSheet.create({
     flex: 1,
     fontSize: 14,
     fontWeight: 'bold',
+    color: '#17171B',
   },
   value: {
     fontSize: 14,
@@ -94,13 +98,13 @@ const styles = StyleSheet.create({
     alignItems: 'center',
   },
   input: {
-  width: 60,
-  height: 36,
-  borderBottomWidth: 1,
-  borderColor: '#ccc',
-  fontSize: 14,
-  textAlign: 'right',
-},
+    width: 60,
+    height: 36,
+    borderBottomWidth: 1,
+    borderColor: '#ccc',
+    fontSize: 14,
+    textAlign: 'right',
+  },
 
   unit: {
     fontSize: 14,

@@ -1,5 +1,7 @@
+import { useState, useMemo, useEffect } from 'react';
 import { useNavigation } from '@react-navigation/native';
-import React, { useState, useMemo, useEffect } from 'react';
+import type { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import type { RootStackParamList } from '../types/navigation';
 import {
   View,
   Text,
@@ -8,44 +10,40 @@ import {
   TouchableOpacity,
   StatusBar,
   ActivityIndicator,
-  Alert,
 } from 'react-native';
 import dayjs from 'dayjs';
-import Header from '../components/Header';
-import TabSwitcher from '../components/TabSwitcher';
-import WeeklyBarChart from '../components/WeeklyBarChart';
-import NutrientSummary from '../components/NutrientSummary';
-import DinnerCard from '../components/DinnerCard';
-import TipCard from '../components/TipCard';
+import Header from '../components/common/Header';
+import TabSwitcher from '../components/challenge/TabSwitcher';
+import WeeklyBarChart from '../components/analysis/WeeklyBarChart';
+import NutrientSummary from '../components/analysis/NutrientSummary';
+import DinnerCard from '../components/analysis/DinnerCard';
+import TipCard from '../components/analysis/TipCard';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 
 const getValidWeeks = () => {
   const today = dayjs();
-
-  // 기준 구간: 지난달 시작 ~ 지난 주(완료된 주) 끝
   const oneMonthAgo = today.subtract(1, 'month').startOf('month');
-  const endDate = today.subtract(1, 'week').endOf('week'); // 지난 주 일요일
+  const endDate = today.subtract(1, 'week').endOf('week');
 
   const weeks: {
     year: number;
     month: number;
     week: number;
     label: string;
-    start: string; // ✅ 월요일
-    end: string;   // 일요일
+    start: string;
+    end: string;
   }[] = [];
 
-  // 탐색 시작점을 '그 주의 일요일'로 정하고, 월요일/일요일을 파생해서 씀
-  let current = oneMonthAgo.startOf('week'); // 일요일
+  let current = oneMonthAgo.startOf('week');
   let lastMonth: number | null = null;
   let weekInMonth = 1;
 
   while (current.isBefore(endDate, 'day')) {
-    const startOfWeekSun = current.startOf('week');          // 일요일
-    const startOfWeekMon = startOfWeekSun.add(1, 'day');     // ✅ 월요일
-    const endOfWeekSun = startOfWeekSun.endOf('week');       // 일요일
+    const startOfWeekSun = current.startOf('week');
+    const startOfWeekMon = startOfWeekSun.add(1, 'day');
+    const endOfWeekSun = startOfWeekSun.endOf('week');
 
-    const monthOfWeek = startOfWeekMon.month();              // ✅ 월요일 기준으로 월 계산
+    const monthOfWeek = startOfWeekMon.month();
     const year = startOfWeekMon.year();
 
     if (monthOfWeek !== lastMonth) {
@@ -58,43 +56,28 @@ const getValidWeeks = () => {
       month: monthOfWeek + 1,
       week: weekInMonth,
       label: `${year % 100}년 ${monthOfWeek + 1}월 ${weekInMonth}주차`,
-      start: startOfWeekMon.format('YYYY-MM-DD'),            // ✅ 서버에 보낼 weekStart(월)
-      end: endOfWeekSun.format('YYYY-MM-DD'),                // 일요일
+      start: startOfWeekMon.format('YYYY-MM-DD'),
+      end: endOfWeekSun.format('YYYY-MM-DD'),
     });
 
     weekInMonth += 1;
-    current = current.add(1, 'week'); // 다음 주(일요일 기준)로 이동
+    current = current.add(1, 'week');
   }
 
   return weeks;
 };
 
-// YYYY-MM-DD → "YY년 M월 N주차" 변환
 const toWeekLabel = (dateStr: string) => {
   const d = dayjs(dateStr);
   if (!d.isValid()) return '';
   const year2 = d.year() % 100;
   const month = d.month() + 1;
 
-  // 그 달의 "주차" 계산: 해당 달의 시작을 주의 시작으로 당겨서(일/월 시작 환경에 맞춰) 몇 번째 주인지 계산
   const monthStartAligned = d.startOf('month').startOf('week');
   const thisWeekAligned = d.startOf('week');
   const weekIndex = thisWeekAligned.diff(monthStartAligned, 'week') + 1;
 
   return `${year2}년 ${month}월 ${weekIndex}주차`;
-};
-
-type ReportResponse = {
-  reportDate: string;            // "2025-09-03"
-  totalCalories: number;
-  totalProtein: number;
-  totalFat: number;
-  totalCarbs: number;
-  recommendedExercise: string;
-  foodSuggestion: string;
-  nutritionSummary: string;
-  caloriePattern: string;
-  healthGuidance: string;
 };
 
 type CaloriePattern = {
@@ -103,17 +86,18 @@ type CaloriePattern = {
 };
 
 type HealthItem = {
-  title: string;        // 가이드 제목
-  description: string;  // 가이드 설명
+  title: string;
+  description: string;
 };
 
 const ReportScreen = () => {
-  const navigation = useNavigation();
+  // ⭐ navigation 타입 지정 (에러 원인 해결)
+  const navigation = useNavigation<NativeStackNavigationProp<RootStackParamList>>();
+
   const [selectedTab, setSelectedTab] = useState<'주간' | '월간'>('주간');
 
   const weeks = useMemo(() => getValidWeeks(), []);
   const [weekIndex, setWeekIndex] = useState(weeks.length);
-
   const selectedWeek = weeks[weekIndex - 1];
 
   const [weekLabelFromApi, setWeekLabelFromApi] = useState<string>('');
@@ -123,10 +107,10 @@ const ReportScreen = () => {
   >([
     { label: '단백질', value: 0, unit: 'g', color: '#CDE8BF' },
     { label: '탄수화물', value: 0, unit: 'g', color: '#FFD794' },
-    { label: '당', value: 0, unit: 'g', color: '#FFC5C6' }, // API에 없으므로 0
+    { label: '당', value: 0, unit: 'g', color: '#FFC5C6' },
     { label: '지방', value: 0, unit: 'g', color: '#FFF7C2' },
-    { label: '기타', value: 0, unit: 'g', color: '#C9D8F0' }, // 필요 시 재계산
   ]);
+
   const [loading, setLoading] = useState<boolean>(true);
   const [hasData, setHasData] = useState<boolean>(false);
   const [nutritionSummary, setNutritionSummary] = useState<string>('');
@@ -134,7 +118,6 @@ const ReportScreen = () => {
   const [healthGuidance, setHealthGuidance] = useState<HealthItem[]>([]);
   const [recommendedExercise, setRecommendedExercise] = useState<string>('');
   const [foodSuggestion, setFoodSuggestion] = useState<string>('');
-
 
   const weeklyBarData = [
     { label: '월', value: 40, color: '#FED77F' },
@@ -146,6 +129,34 @@ const ReportScreen = () => {
     { label: '일', value: 30, color: '#FED77F' },
   ];
 
+  // ⭐ MealRecordScreen으로 이동 + 영양소 전달
+  const goToMealRecord = () => {
+    const toRaw = (label: string, defaultColor: string) => {
+      const item = nutrients.find(n => n.label === label);
+      return {
+        id: label,
+        label,
+        name: label,
+        nutrientName: label,
+        grams: item?.value ?? 0,
+        color: defaultColor,
+      };
+    };
+
+    const rawNutrients = [
+      toRaw('단백질', '#CDE8BF'),
+      toRaw('탄수화물', '#FFD794'),
+      toRaw('당', '#FFC5C6'),
+      toRaw('지방', '#FFF7C2'),
+    ];
+
+    navigation.navigate('MealRecord', {
+      selectedMenu: '리포트 추천 식단',
+      selectedKcal: Math.round(totalCalories / 7),
+      rawNutrients,
+    });
+  };
+
   useEffect(() => {
     let isMounted = true;
     const controller = new AbortController();
@@ -156,11 +167,9 @@ const ReportScreen = () => {
         setHasData(false);
 
         const token = await AsyncStorage.getItem('accessToken');
-        if (!token) throw new Error('토큰이 없습니다. 로그인 후 이용해주세요.');
+        if (!token) throw new Error('토큰 없음');
 
         const url = `http://api.snapmeal.store/reports/weekly?weekStart=${weekStart}`;
-        console.log('📡 요청 URL:', url);
-
         const res = await fetch(url, {
           method: 'GET',
           headers: {
@@ -177,15 +186,12 @@ const ReportScreen = () => {
         const data = json.result;
 
         if (!data || Object.keys(data).length === 0) {
-          console.warn('⚠️ 데이터 없음');
           if (isMounted) {
             setHasData(false);
             setLoading(false);
           }
           return;
         }
-
-        console.log("data", data);
 
         const totalCaloriesNum = Number(data.totalCalories) || 0;
         const protein = Number(data.totalProtein) || 0;
@@ -195,7 +201,7 @@ const ReportScreen = () => {
 
         if (isMounted) {
           setHasData(true);
-          setWeekLabelFromApi(toWeekLabel(data.reportDate)); // 서버 라벨 우선
+          setWeekLabelFromApi(toWeekLabel(data.reportDate));
           setTotalCalories(totalCaloriesNum);
           setNutrients([
             { label: '단백질', value: protein, unit: 'g', color: '#CDE8BF' },
@@ -211,10 +217,7 @@ const ReportScreen = () => {
         }
       } catch (err: any) {
         if (err?.name !== 'AbortError') {
-          console.error('❌ fetch error:', err);
-          if (isMounted) {
-            setHasData(false);
-          }
+          setHasData(false);
         }
       } finally {
         if (isMounted) setLoading(false);
@@ -277,7 +280,7 @@ const ReportScreen = () => {
         ) : (
           <>
             <WeeklyBarChart
-              data={weeklyBarData /* 일단 기존 막대 데이터 유지 (일별 값 API 생기면 교체) */}
+              data={weeklyBarData}
               averageText={
                 totalCalories > 0
                   ? `일주일동안 평균 ${formatNumber(Math.round(totalCalories / 7))}kcal를 섭취했어요!`
@@ -293,7 +296,7 @@ const ReportScreen = () => {
 
             <DinnerCard
               title="칼로리 섭취 패턴"
-              emoji={caloriePattern?.emoji} // 예: 🌙
+              emoji={caloriePattern?.emoji}
               note={caloriePattern?.summaries?.join('\n')}
             />
 
@@ -317,12 +320,25 @@ const ReportScreen = () => {
                 )}
               </View>
             )}
+
+            <TouchableOpacity
+              onPress={goToMealRecord}
+              style={{
+                marginTop: 20,
+                backgroundColor: '#38B000',
+                paddingVertical: 12,
+                borderRadius: 10,
+              }}
+            >
+              <Text style={{ color: '#fff', textAlign: 'center', fontWeight: '700' }}>
+                이 식단으로 기록하기
+              </Text>
+            </TouchableOpacity>
           </>
         )}
       </View>
     </ScrollView>
   );
-
 };
 
 const styles = StyleSheet.create({

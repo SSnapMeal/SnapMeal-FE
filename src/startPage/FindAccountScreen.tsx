@@ -1,10 +1,10 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { View, Text, TouchableOpacity, StyleSheet, Dimensions, Image } from 'react-native';
-import LoginBackground from '../components/LoginBackground';
+import LoginBackground from '../components/auth/LoginBackground';
 import { SafeAreaView } from 'react-native-safe-area-context';
-import CustomInput from '../components/CustomInput';
-import AccountFinderTabs from '../components/AccountFinderTabs';
-import NextButton from '../components/NextButton';
+import CustomInput from '../components/common/CustomInput';
+import AccountFinderTabs from '../components/auth/AccountFinderTabs';
+import NextButton from '../components/common/NextButton';
 
 const { height } = Dimensions.get('window');
 

@@ -1,4 +1,3 @@
-import React from 'react';
 import { View, StyleSheet, Image, StatusBar, Dimensions, SafeAreaView } from 'react-native';
 
 const { height } = Dimensions.get('window');
@@ -14,7 +13,7 @@ const LoginBackground = () => {
 
           {/* 카메라 이미지 */}
           <Image
-            source={require('../assets/images/camera.png')}
+            source={require('../../assets/images/camera.png')}
             style={styles.cameraImg}
             resizeMode="cover"
           />

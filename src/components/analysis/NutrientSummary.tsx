@@ -10,7 +10,7 @@ interface NutrientItem {
 
 interface NutrientSummaryProps {
   data: NutrientItem[];
-  nutritionSummary?: string; // ✅ 서버에서 내려온 분석 문구
+  nutritionSummary?: string;
 }
 
 const NutrientSummary: React.FC<NutrientSummaryProps> = ({ data, nutritionSummary }) => {

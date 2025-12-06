@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   StyleSheet,
   ScrollView,
@@ -7,12 +7,16 @@ import {
   Text,
   ActivityIndicator,
 } from 'react-native';
-import Header from '../components/Header';
-import TabSwitcher from '../components/TabSwitcher';
+
+import Header from '../components/common/Header';
+import TabSwitcher from '../components/challenge/TabSwitcher';
+
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import axios from 'axios';
-import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
+
+import ChallengeCard, { ChallengeState } from '../components/challenge/ChallengeCard';
+
 
 const mapStatusToState = (status: string): ChallengeState => {
   switch (status) {
@@ -31,9 +35,10 @@ const ChallengeDoneScreen = () => {
   const [selectedTab, setSelectedTab] = useState<'전체' | '성공'>('전체');
   const [challenges, setChallenges] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
+  const [reviewedChallengeIds, setReviewedChallengeIds] = useState<number[]>([]);
   const navigation = useNavigation<any>();
 
-  // ✅ 완료된 챌린지 불러오기 함수 (마운트 + 포커스에서 같이 사용)
+  // 완료된 챌린지 + 내가 쓴 리뷰 목록 불러오기
   const fetchChallenges = useCallback(async () => {
     try {
       setLoading(true);
@@ -42,33 +47,62 @@ const ChallengeDoneScreen = () => {
       if (!token) {
         console.error('토큰이 없습니다. 로그인 후 다시 시도해주세요.');
         setChallenges([]);
+        setReviewedChallengeIds([]);
         return;
       }
 
-      const res = await axios.get('http://api.snapmeal.store/challenges/my', {
-        headers: {
-          Authorization: `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-        params: {
-          statuses: 'FAIL,SUCCESS',
-        },
-      });
+      const commonHeaders = {
+        Authorization: `Bearer ${token}`,
+        'Content-Type': 'application/json',
+      };
 
-      setChallenges(res.data);
+      // 1) 완료된 챌린지
+      const challengeRes = await axios.get(
+        'http://api.snapmeal.store/challenges/my',
+        {
+          headers: commonHeaders,
+          params: {
+            statuses: 'FAIL,SUCCESS',
+          },
+        }
+      );
+
+      setChallenges(challengeRes.data);
+
+      // 2) 내가 쓴 리뷰 전체
+      try {
+        const reviewRes = await axios.get(
+          'http://api.snapmeal.store/challenges/reviews/my',
+          {
+            headers: commonHeaders,
+          }
+        );
+
+        const ids =
+          Array.isArray(reviewRes.data)
+            ? reviewRes.data.map((r: any) => r.challengeId)
+            : [];
+
+        setReviewedChallengeIds(ids);
+      } catch (err) {
+        console.error('리뷰 목록 불러오기 실패:', err);
+        setReviewedChallengeIds([]);
+      }
     } catch (e) {
       console.error('완료된 챌린지 불러오기 실패:', e);
+      setChallenges([]);
+      setReviewedChallengeIds([]);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // 🔹 첫 진입 시 한 번 호출
+  // 첫 진입 시 한 번 호출
   useEffect(() => {
     fetchChallenges();
   }, [fetchChallenges]);
 
-  // 🔹 다른 화면 갔다가 돌아올 때마다 새로고침
+  // 다른 화면 갔다가 돌아올 때마다 새로고침
   useFocusEffect(
     useCallback(() => {
       fetchChallenges();
@@ -110,15 +144,17 @@ const ChallengeDoneScreen = () => {
               targetMenuName={challenge.targetMenuName}
               description={challenge.description}
               state={mapStatusToState(challenge.status)}
-              onPress={() =>
+              hasReview={reviewedChallengeIds.includes(challenge.challengeId)}
+              onPress={() => {
+                console.log('challenge item:', challenge);
                 navigation.navigate('ChallengeDetail', {
                   challenge: {
                     ...challenge,
                     introduction: challenge.introduction ?? {},
                     stamps: Array.isArray(challenge.stamps) ? challenge.stamps : [],
                   },
-                })
-              }
+                });
+              }}
             />
           ))
         )}

@@ -1,9 +1,16 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, TextInput, ScrollView } from 'react-native';
-import Header from '../components/Header';
+import { useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  TouchableOpacity,
+  TextInput,
+  ScrollView,
+} from 'react-native';
+import Header from '../components/common/Header';
+import CustomInput from '../components/common/CustomInput';
+import MealTimeSelector from '../components/analysis/MealTimeSelector';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
-import CustomInput from '../components/CustomInput';
-import MealTimeSelector from '../components/MealTimeSelector';
 import { RootStackParamList } from '../types/navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import axios from 'axios';
@@ -13,87 +20,125 @@ type Navigation = NativeStackNavigationProp<RootStackParamList>;
 type MealDetailRouteProp = RouteProp<RootStackParamList, 'MealDetail'>;
 
 const MealDetailScreen = () => {
-  const [selectedTime, setSelectedTime] = useState('아침');
-  const [memo, setMemo] = useState('');
-  const [place, setPlace] = useState('');
   const navigation = useNavigation<Navigation>();
   const route = useRoute<MealDetailRouteProp>();
-  const { imageUri, rawNutrients, selectedMenu = '', selectedKcal = 0, nutritionId = 8 } = route.params;
+
+  const {
+    imageUri,
+    rawNutrients,
+    selectedMenu = '',
+    ocrMenuName = '',
+    selectedKcal = 0,
+    nutritionId = 0,
+    mode,
+    mealType,
+    memo: initialMemo,
+    location: initialLocation,
+    mealDate,
+    mealId,
+  } = route.params;
+
+  const isEditMode = mode === 'edit';
+
+  const [selectedTime, setSelectedTime] = useState(() => {
+    if (mealType === 'BREAKFAST') return '아침';
+    if (mealType === 'LUNCH') return '점심';
+    if (mealType === 'DINNER') return '저녁';
+    return '아침';
+  });
+
+  const [memo, setMemo] = useState(initialMemo ?? '');
+  const [place, setPlace] = useState(initialLocation ?? '');
 
   const uploadMeal = async () => {
     try {
       const token = await AsyncStorage.getItem('accessToken');
-      if (!token) {
-        console.warn('⚠️ 토큰이 없습니다. 로그인 상태 확인!');
-        return;
-      }
+      if (!token) return;
 
       const timeMap: Record<string, string> = {
-        '아침': 'BREAKFAST',
-        '점심': 'LUNCH',
-        '저녁': 'DINNER',
+        아침: 'BREAKFAST',
+        점심: 'LUNCH',
+        저녁: 'DINNER',
       };
+
       const apiMealType = timeMap[selectedTime] || 'DINNER';
 
-      // ✅ topNutrients 추출 (내림차순으로 상위 2개)
-      const sortedNutrients = [...rawNutrients].sort((a, b) => b.grams - a.grams);
-      const topNutrients = sortedNutrients.slice(0, 2).map(item => ({
-        name: item.label,
-        value: `${item.grams}g`
-      }));
+      const body = {
+        nutritionId,
+        memo,
+        location: place,
+        meal_type: apiMealType,
+        className: selectedMenu || ocrMenuName || null,
+        menu: selectedMenu || ocrMenuName || null,
+        imageUrl: imageUri,
+        tag: '적정',
+      };
 
-      const mealResponse = await axios.post(
-        'http://api.snapmeal.store/meals',
-        {
-          nutritionId,
-          memo,
-          location: place,
-          meal_type: apiMealType,
-          title: selectedMenu,
-          imageUrl: imageUri,
-          tag: '적정',
-        },
-        {
+      console.log('보내는 바디', body);
+
+      if (isEditMode && mealId) {
+        await axios.put(`http://api.snapmeal.store/meals/${mealId}`, body, {
           headers: {
             'Content-Type': 'application/json',
             Authorization: `Bearer ${token}`,
-          }
-        }
-      );
+          },
+        });
+      } else {
+        await axios.post('http://api.snapmeal.store/meals', body, {
+          headers: {
+            'Content-Type': 'application/json',
+            Authorization: `Bearer ${token}`,
+          },
+        });
+      }
 
-      console.log('식사 등록 성공:', mealResponse.data);
+      const sortedNutrients = [...(rawNutrients || [])].sort(
+        (a, b) => b.grams - a.grams
+      );
+      const topNutrients = sortedNutrients.slice(0, 2).map(item => ({
+        name: item.label,
+        value: `${item.grams}g`,
+      }));
 
       navigation.navigate('Analysis', {
         imageSource: { uri: imageUri },
-        title: `${selectedMenu} (${selectedKcal}kcal)`,
+        title: `${selectedMenu || ocrMenuName} (${selectedKcal}kcal)`,
         mealTime: selectedTime,
-        topNutrients: topNutrients,
+        topNutrients,
         tag: '적정',
       });
-
     } catch (error: any) {
-      console.error('등록 실패:', error.response?.status, error.response?.data);
+      console.log('업로드 실패:', error.response?.data);
     }
   };
 
   return (
     <View style={{ flex: 1, backgroundColor: '#FAFAFA' }}>
-      <TouchableOpacity style={styles.prevButton} onPress={() => navigation.goBack()}>
+      <TouchableOpacity
+        style={styles.prevButton}
+        onPress={() => navigation.goBack()}
+      >
         <Text style={styles.prevBtn}>{'<<'} 이전</Text>
       </TouchableOpacity>
 
       <TouchableOpacity style={styles.nextButton} onPress={uploadMeal}>
-        <Text style={styles.nextBtn}>완료</Text>
+        <Text style={styles.nextBtn}>{isEditMode ? '수정' : '완료'}</Text>
       </TouchableOpacity>
 
       <Header title="식사 기록" backgroundColor="#FAFAFA" showBackArrow={false} />
 
       <ScrollView contentContainerStyle={styles.container}>
-        <MealTimeSelector selectedTime={selectedTime} onSelectTime={setSelectedTime} />
+        <MealTimeSelector
+          selectedTime={selectedTime}
+          onSelectTime={setSelectedTime}
+        />
 
-        <Text style={[styles.label, { marginTop: 30 }, styles.horizontalPadding]}>메모</Text>
+        <Text style={[styles.label, { marginTop: 30 }, styles.horizontalPadding]}>
+          메모
+        </Text>
+
         <TextInput
-          style={[styles.memoInput]}
+          style={styles.memoInput}
           placeholder="메모"
           placeholderTextColor="#999"
           multiline

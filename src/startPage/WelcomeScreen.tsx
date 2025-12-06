@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 
 import { TouchableOpacity } from 'react-native';
-import CustomInput from '../components/CustomInput';
+import CustomInput from '../components/common/CustomInput';
 
 import { useNavigation } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';

@@ -1,8 +1,8 @@
-import React, { useState } from 'react';
-import { View, Text, TouchableOpacity, StyleSheet, ScrollView, StatusBar, TextInput } from 'react-native';
-import Header from '../components/Header';
-import FoodItem from '../components/FoodItem';
-import CompleteButton from '../components/CompleteButton';
+import { useState } from 'react';
+import { View, Text, StyleSheet, ScrollView, StatusBar, TextInput } from 'react-native';
+import Header from '../components/common/Header';
+import FoodItem from '../components/analysis/FoodItem';
+import CompleteButton from '../components/common/CompleteButton';
 import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { RootStackParamList } from '../types/navigation';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';

@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import {
   View,
   Image,
@@ -8,8 +8,8 @@ import {
   Text,
 } from 'react-native';
 import { ScrollView } from 'react-native-gesture-handler';
-import Navigation from '../components/Navigation';
-import ChallengeCard, { ChallengeState } from '../components/ChallengeCard';
+import Navigation from '../components/common/Navigation';
+import ChallengeCard, { ChallengeState } from '../components/challenge/ChallengeCard';
 import { useNavigation, useFocusEffect } from '@react-navigation/native';
 import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
@@ -261,6 +261,8 @@ const styles = StyleSheet.create({
   },
   nick: {
     fontSize: 16,
+    color: '#17171B',
+    marginTop: -3,
   },
   top: {
     fontSize: 16,

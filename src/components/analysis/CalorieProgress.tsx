@@ -50,6 +50,7 @@ const styles = StyleSheet.create({
         marginRight: 15,
         fontWeight: 'bold',
         marginBottom: 3,
+        color: '#17171B',
     },
     kcalBarBackground: {
         flex: 1,
@@ -64,6 +65,7 @@ const styles = StyleSheet.create({
     },
     kcalValue: {
         fontWeight: 'bold',
+        color: '#17171B',
     },
 });
 

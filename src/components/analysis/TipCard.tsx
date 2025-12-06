@@ -19,7 +19,6 @@ const TipCard = ({ healthGuidance }: TipCardProps) => {
       <Text style={styles.title}>다음에는 이렇게 해보아요 :)</Text>
 
       {hasData ? (
-        // ✅ 배열 데이터가 있을 때
         healthGuidance.map((item, index) => (
           <View key={index} style={styles.itemWrapper}>
             <Text style={styles.itemTitle}>{item.title}</Text>
@@ -27,7 +26,6 @@ const TipCard = ({ healthGuidance }: TipCardProps) => {
           </View>
         ))
       ) : (
-        // ❌ 데이터가 없을 때
         <Text style={styles.emptyText}>아직 건강 가이드 데이터가 없습니다.</Text>
       )}
     </View>

@@ -1,4 +1,4 @@
-import React, { useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
     View,
     StyleSheet,
@@ -15,7 +15,7 @@ import { useNavigation, useRoute, RouteProp } from '@react-navigation/native';
 import { NativeStackNavigationProp } from '@react-navigation/native-stack';
 import { RootStackParamList } from '../types/navigation';
 import LinearGradient from 'react-native-linear-gradient';
-import NextButton from '../components/NextButton';
+import NextButton from '../components/common/NextButton';
 import axios from 'axios';
 
 type ProfileRouteProp = RouteProp<RootStackParamList, 'ProfileSetting'>;
